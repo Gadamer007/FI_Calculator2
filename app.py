@@ -64,59 +64,41 @@ def calculate():
             years_until_fi = fire_year_exact - age_input
             break
 
-    colors = {
-        "Initial Portfolio": "rgba(160, 160, 160, 0.8)",
-        "Cumulative Contributions": "rgba(255, 193, 7, 0.7)",
-        "Cumulative Returns": "rgba(76, 175, 80, 0.7)",
-        "Total Net Worth": "rgba(41, 182, 246, 1)",
-    }
-
+    # Build individual line plot (no stacking)
     fig = go.Figure()
 
-    initial_layer = np.array([initial_portfolio] * len(age))
-    contributions_cumulative = np.array(cumulative_contributions) + initial_layer
-    returns_cumulative = np.array(cumulative_returns) + contributions_cumulative
-    
-    # Initial Portfolio Layer
     fig.add_trace(go.Scatter(
         x=age,
-        y=initial_layer,
-        fill='tozeroy',
-        mode='none',
+        y=[initial_portfolio] * len(age),
+        mode='lines',
         name="Initial Portfolio",
-        fillcolor=colors["Initial Portfolio"]
+        line=dict(color="gray", dash="dash")
     ))
-    
-    # Cumulative Contributions Layer
+
     fig.add_trace(go.Scatter(
         x=age,
-        y=contributions_cumulative,
-        fill='tonexty',
-        mode='none',
-        name="Contributions",
-        fillcolor=colors["Cumulative Contributions"]
+        y=cumulative_contributions,
+        mode='lines',
+        name="Cumulative Contributions",
+        line=dict(color="orange")
     ))
-    
-    # Cumulative Returns Layer
+
     fig.add_trace(go.Scatter(
         x=age,
-        y=returns_cumulative,
-        fill='tonexty',
-        mode='none',
-        name="Returns",
-        fillcolor=colors["Cumulative Returns"]
+        y=cumulative_returns,
+        mode='lines',
+        name="Cumulative Returns",
+        line=dict(color="green")
     ))
-    
-    # Net Worth Line
+
     fig.add_trace(go.Scatter(
         x=age,
         y=portfolio_values,
         mode='lines',
         name="Total Net Worth",
-        line=dict(color=colors["Total Net Worth"], width=3)
+        line=dict(color="deepskyblue", width=3)
     ))
-    
-    # FIRE Threshold Line
+
     fig.add_trace(go.Scatter(
         x=age,
         y=[fire_number] * len(age),
@@ -126,22 +108,40 @@ def calculate():
     ))
 
     if fire_year_exact is not None:
-        fig.add_trace(go.Scatter(x=[fire_year_exact, fire_year_exact], y=[0, fire_number], mode='lines', line=dict(color='lightgrey', dash='dash'), showlegend=False))
-        lower_index = max(i for i in range(len(age)) if age[i] <= fire_year_exact)
-        upper_index = min(i for i in range(len(age)) if age[i] >= fire_year_exact)
-        weight_upper = (fire_year_exact - age[lower_index]) / (age[upper_index] - age[lower_index])
-        weight_lower = 1 - weight_upper
-        interpolated_contributions = cumulative_contributions[lower_index] * weight_lower + cumulative_contributions[upper_index] * weight_upper
-        interpolated_returns = cumulative_returns[lower_index] * weight_lower + cumulative_returns[upper_index] * weight_upper
-        interpolated_net_worth = portfolio_values[lower_index] * weight_lower + portfolio_values[upper_index] * weight_upper
-        fire_hover_text = f"<b>Age:</b> {fire_year_exact:.1f}<br><b>Initial Portfolio:</b> ${initial_portfolio:,.0f}<br><b>Cumulative Contributions:</b> ${interpolated_contributions:,.0f}<br><b>Cumulative Returns:</b> ${interpolated_returns:,.0f}<br><b>Total Net Worth:</b> ${interpolated_net_worth:,.0f}"
-        fig.add_trace(go.Scatter(x=[fire_year_exact], y=[fire_number], mode='markers', marker=dict(color='red', size=10), name="FIRE Marker", hoverinfo="text", text=[fire_hover_text], showlegend=False))
-        fig.add_annotation(x=fire_year_exact, y=fire_number + (fire_number * 0.12), text=f"{years_until_fi:.1f} years<br>(age {fire_year_exact:.1f})", showarrow=False, font=dict(size=14, color="white"), align="center")
+        fig.add_trace(go.Scatter(
+            x=[fire_year_exact, fire_year_exact],
+            y=[0, fire_number],
+            mode='lines',
+            line=dict(color='lightgrey', dash='dot'),
+            showlegend=False
+        ))
+        fig.add_trace(go.Scatter(
+            x=[fire_year_exact],
+            y=[fire_number],
+            mode='markers',
+            marker=dict(color='red', size=10),
+            name="FIRE Marker",
+            showlegend=False
+        ))
+        fig.add_annotation(
+            x=fire_year_exact,
+            y=fire_number + (fire_number * 0.1),
+            text=f"{years_until_fi:.1f} years<br>(age {fire_year_exact:.1f})",
+            showarrow=False,
+            font=dict(size=14, color="white")
+        )
 
-    fig.update_layout(title=dict(text="Road to Financial Independence", x=0.5, xanchor="center", yanchor="top", font=dict(size=20, color="white")), plot_bgcolor='black', paper_bgcolor='black', font=dict(color='white'), legend=dict(font=dict(color='white')), showlegend=True)
-    fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor="rgba(200,200,200,0.3)", zeroline=True, zerolinecolor="white", color="white", title_text="Age", title_font=dict(size=14, color="white"), tickfont=dict(color="white"), showline=True, linecolor="white", range=[min(age), max(age)])
-    fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor="rgba(200,200,200,0.3)", zeroline=True, zerolinecolor="white", color="white", title_text="Portfolio Value ($)", title_font=dict(size=14, color="white"), tickfont=dict(color="white"), showline=True, linecolor="white", range=[0, max(portfolio_values) * 1.1])
+    fig.update_layout(
+        title="Road to Financial Independence",
+        plot_bgcolor='black',
+        paper_bgcolor='black',
+        font=dict(color='white'),
+        legend=dict(font=dict(color='white')),
+        xaxis=dict(title="Age", color="white", gridcolor="rgba(200,200,200,0.2)"),
+        yaxis=dict(title="Portfolio Value ($)", color="white", gridcolor="rgba(200,200,200,0.2)"),
+    )
 
+    # ------------------- MAP -------------------
     selected_col_index = df_col.loc[df_col["Country"] == selected_country, "COL_Index"].values[0]
     df = df_col.copy()
     df["Relative COL (%)"] = (df["COL_Index"] / selected_col_index) * 100
@@ -160,7 +160,6 @@ def calculate():
     df["Updated FI Timeline (Years)"] = df["Adjusted Retirement Expenses ($)"].apply(calc_fi_timeline)
     df["Display FI Timeline"] = df["Updated FI Timeline (Years)"].apply(lambda x: max(x, 0))
 
-    
     fig_map = px.choropleth(
         df,
         locations="Country",
@@ -177,8 +176,12 @@ def calculate():
         title="🌍 FI Timeline relocating to other countries (Map)",
         labels={"Display FI Timeline": "Years to FI"}
     )
-
-    fig_map.update_layout(geo=dict(showcoastlines=True, projection_type="natural earth"), margin={"r":0,"t":90,"l":0,"b":40}, coloraxis_colorbar=dict(title="Years to FI"), title_x=0.15)
+    fig_map.update_layout(
+        geo=dict(showcoastlines=True, projection_type="natural earth"),
+        margin={"r":0,"t":90,"l":0,"b":40},
+        coloraxis_colorbar=dict(title="Years to FI"),
+        title_x=0.15
+    )
 
     fi_ready_count = (df["Updated FI Timeline (Years)"] <= 0.1).sum()
     country_table = df[["Country", "Relative COL (%)", "Adjusted Retirement Expenses ($)", "Display FI Timeline"]]

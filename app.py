@@ -73,53 +73,20 @@ def calculate():
 
     fig = go.Figure()
 
-        # Initial Portfolio
-    fig.add_trace(go.Scatter(
-        x=age,
-        y=[initial_portfolio] * len(age),
-        fill='tozeroy',
-        mode='none',
-        name="Initial Portfolio",
-        fillcolor=colors["Initial Portfolio"]
-    ))
+    # Correct Stacking Order
+    initial_layer = np.array([initial_portfolio] * len(age))
+    fig.add_trace(go.Scatter(x=age, y=initial_layer, fill='tozeroy', mode='none', name="Initial Portfolio", fillcolor=colors["Initial Portfolio"]))
 
-    # Cumulative Contributions (stacked on top of initial portfolio)
-    contributions_cumulative = np.array(cumulative_contributions) + initial_portfolio
-    fig.add_trace(go.Scatter(
-        x=age,
-        y=contributions_cumulative,
-        fill='tonexty',
-        mode='none',
-        name="Contributions",
-        fillcolor=colors["Cumulative Contributions"]
-    ))
+    contributions_cumulative = np.array(cumulative_contributions)
+    contributions_layer = initial_layer + contributions_cumulative
+    fig.add_trace(go.Scatter(x=age, y=contributions_layer, fill='tonexty', mode='none', name="Contributions", fillcolor=colors["Cumulative Contributions"]))
 
-    # Cumulative Returns (stacked on top of contributions)
-    returns_cumulative = contributions_cumulative + np.array(cumulative_returns)
-    fig.add_trace(go.Scatter(
-        x=age,
-        y=returns_cumulative,
-        fill='tonexty',
-        mode='none',
-        name="Returns",
-        fillcolor=colors["Cumulative Returns"]
-    ))
+    returns_layer = contributions_layer + np.array(cumulative_returns)
+    fig.add_trace(go.Scatter(x=age, y=returns_layer, fill='tonexty', mode='none', name="Returns", fillcolor=colors["Cumulative Returns"]))
 
-    fig.add_trace(go.Scatter(
-        x=age,
-        y=portfolio_values,
-        mode='lines',
-        name="Total Net Worth",
-        line=dict(color=colors["Total Net Worth"], width=3)
-    ))
+    fig.add_trace(go.Scatter(x=age, y=portfolio_values, mode='lines', name="Total Net Worth", line=dict(color=colors["Total Net Worth"], width=3)))
 
-    fig.add_trace(go.Scatter(
-        x=age,
-        y=[fire_number] * len(age),
-        mode='lines',
-        name="FIRE Number",
-        line=dict(color='red', dash='dash')
-    ))
+    fig.add_trace(go.Scatter(x=age, y=[fire_number] * len(age), mode='lines', name="FIRE Number", line=dict(color='red', dash='dash')))
 
     if fire_year_exact is not None:
         fig.add_trace(go.Scatter(x=[fire_year_exact, fire_year_exact], y=[0, fire_number], mode='lines', line=dict(color='lightgrey', dash='dash'), showlegend=False))
@@ -156,23 +123,7 @@ def calculate():
     df["Updated FI Timeline (Years)"] = df["Adjusted Retirement Expenses ($)"].apply(calc_fi_timeline)
     df["Display FI Timeline"] = df["Updated FI Timeline (Years)"].apply(lambda x: max(x, 0))
 
-    fig_map = px.choropleth(
-        df,
-        locations="Country",
-        locationmode="country names",
-        color="Display FI Timeline",
-        hover_name="Country",
-        color_continuous_scale=[
-            (0.0, "darkgreen"),
-            (0.2, "lightgreen"),
-            (0.5, "yellow"),
-            (0.8, "orange"),
-            (1.0, "darkred")
-        ],
-        title="🌍 FI Timeline relocating to other countries (Map)",
-        labels={"Display FI Timeline": "Years to FI"}
-    )
-
+    fig_map = px.choropleth(df, locations="Country", locationmode="country names", color="Display FI Timeline", hover_name="Country", color_continuous_scale=[(0.0, "darkgreen"), (0.2, "lightgreen"), (0.5, "yellow"), (0.8, "orange"), (1.0, "darkred")], title="🌍 FI Timeline relocating to other countries (Map)", labels={"Display FI Timeline": "Years to FI"})
     fig_map.update_layout(geo=dict(showcoastlines=True, projection_type="natural earth"), margin={"r":0,"t":90,"l":0,"b":40}, coloraxis_colorbar=dict(title="Years to FI"), title_x=0.15)
 
     fi_ready_count = (df["Updated FI Timeline (Years)"] <= 0.1).sum()
@@ -184,7 +135,7 @@ def calculate():
         'mapChart': fig_map.to_json(),
         'fireYear': round(fire_year_exact, 1),
         'yearsUntilFI': round(years_until_fi, 1),
-        'fireNumber': round(fire_number),
+        'fireNumber': round(fire_number, 1),
         'fiReadyCount': int(fi_ready_count),
         'countryTable': country_table
     })

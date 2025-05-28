@@ -108,9 +108,11 @@
         </div>`;
 
 
-      Plotly.newPlot('portfolioChart', JSON.parse(data.portfolioChart).data, JSON.parse(data.portfolioChart).layout);
-      Plotly.newPlot('mapChart', JSON.parse(data.mapChart).data, JSON.parse(data.mapChart).layout);
-
+      const fig = JSON.parse(data.portfolioChart);
+      Plotly.newPlot('portfolioChart', fig.data, fig.layout);
+      const map = JSON.parse(data.mapChart);
+      Plotly.newPlot('mapChart', map.data, map.layout);
+      
       const tableBody = document.querySelector('#countryTable tbody');
       tableBody.innerHTML = '';
       data.countryTable.forEach(row => {

@@ -1,200 +1,129 @@
-from flask import Flask, render_template, request, jsonify
-import pandas as pd
-import plotly.graph_objs as go
-import plotly.express as px
-import numpy as np
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Financial Independence Calculator</title>
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 800px;
+      margin: auto;
+      padding: 20px;
+    }
+    label { display: block; margin-top: 10px; }
+    input, select { width: 100%; padding: 5px; margin-top: 5px; }
+    button { margin-top: 15px; padding: 10px 20px; }
+    table { width: 100%; margin-top: 20px; border-collapse: collapse; }
+    th, td { padding: 8px; border: 1px solid #ccc; text-align: left; }
+    #results { margin-top: 30px; }
+  </style>
+</head>
+<body>
+  <h1>🔥 Financial Independence Calculator</h1>
 
-app = Flask(__name__)
+  <label>Current Age:
+    <input type="number" id="age" value="30">
+  </label>
 
-# Load Excel data
-xls_url = "https://raw.githubusercontent.com/Gadamer007/FI_Calculator/main/Col_Sal.xlsx"
-df_col = pd.read_excel(xls_url, sheet_name="Country", usecols=["Country", "Col"])
-df_col.columns = ["Country", "COL_Index"]
-df_col.dropna(inplace=True)
+  <label>Net Annual Income ($):
+    <input type="number" id="netIncome" step="1000" value="88000">
+  </label>
 
-@app.route('/')
-def index():
-    countries = df_col["Country"].unique().tolist()
-    return render_template("index.html", countries=countries)
+  <label>Current Portfolio Value ($):
+    <input type="number" id="initialPortfolio" step="10000" value="200000">
+  </label>
 
-@app.route('/calculate', methods=['POST'])
-def calculate():
-    data = request.get_json()
-    initial_portfolio = float(data['initialPortfolio'])
-    annual_expenses = float(data['annualExpenses'])
-    net_income = float(data['netIncome'])
-    roi = float(data['roi'])
-    swr = float(data['swr'])
-    retirement_expenses = float(data['retirementExpenses'])
-    age_input = int(data['age'])
-    selected_country = data['country']
+  <label>Current Annual Expenses ($):
+    <input type="number" id="annualExpenses" step="1000" value="41000">
+  </label>
 
-    current_portfolio = initial_portfolio
-    fire_number = (annual_expenses / swr) * 100
-    annual_savings = net_income - annual_expenses
-    age = []
-    portfolio_values = []
-    cumulative_contributions = []
-    cumulative_returns = []
-    total_contributions = 0
-    years = 0
+  <label>Estimated Retirement Expenses ($):
+    <input type="number" id="retirementExpenses" step="1000" value="41000">
+  </label>
 
-    while current_portfolio < fire_number:
-        age.append(age_input + years)
-        portfolio_values.append(current_portfolio)
-        cumulative_contributions.append(total_contributions)
-        cumulative_returns.append(current_portfolio - total_contributions - initial_portfolio)
-        current_portfolio += current_portfolio * (roi / 100) + annual_savings
-        total_contributions += annual_savings
-        years += 1
+  <label>Annual ROI (%):
+    <input type="number" id="roi" value="7" step="0.1">
+  </label>
 
-    for _ in range(3):
-        age.append(age[-1] + 1)
-        portfolio_values.append(current_portfolio)
-        cumulative_contributions.append(total_contributions)
-        cumulative_returns.append(current_portfolio - total_contributions - initial_portfolio)
-        current_portfolio += current_portfolio * (roi / 100) + annual_savings
-        total_contributions += annual_savings
+  <label>Safe Withdrawal Rate (%):
+    <input type="number" id="swr" value="4" step="0.1">
+  </label>
 
-    fire_year_exact = None
-    years_until_fi = None
-    for i in range(len(portfolio_values) - 1):
-        if portfolio_values[i] < fire_number and portfolio_values[i + 1] >= fire_number:
-            fire_year_exact = age[i] + ((fire_number - portfolio_values[i]) / (portfolio_values[i + 1] - portfolio_values[i])) * (age[i + 1] - age[i])
-            years_until_fi = fire_year_exact - age_input
-            break
+  <label>Select Your Country:
+    <select id="countrySelect">
+      {% for c in countries %}
+        <option value="{{ c }}">{{ c }}</option>
+      {% endfor %}
+    </select>
+  </label>
 
-    # Build individual line plot (no stacking)
-    fig = go.Figure()
+  <button onclick="runCalculator()">Calculate</button>
 
-    fig.add_trace(go.Scatter(
-        x=age,
-        y=[initial_portfolio] * len(age),
-        mode='lines',
-        name="Initial Portfolio",
-        line=dict(color="gray", dash="dash")
-    ))
+  <div id="results">
+    <h3>Results</h3>
+    <p id="summary"></p>
+    <div id="portfolioChart"></div>
+    <div id="mapChart" style="margin-top: 40px;"></div>
+    <h4>FI Timeline by Country</h4>
+    <table id="countryTable">
+      <thead>
+        <tr>
+          <th>Country</th>
+          <th>Relative COL (%)</th>
+          <th>Retirement Expenses ($)</th>
+          <th>FI Timeline (Years)</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
 
-    fig.add_trace(go.Scatter(
-        x=age,
-        y=cumulative_contributions,
-        mode='lines',
-        name="Cumulative Contributions",
-        line=dict(color="orange")
-    ))
+  <script>
+    async function runCalculator() {
+      const payload = {
+        age: document.getElementById('age').value,
+        netIncome: document.getElementById('netIncome').value,
+        initialPortfolio: document.getElementById('initialPortfolio').value,
+        annualExpenses: document.getElementById('annualExpenses').value,
+        retirementExpenses: document.getElementById('retirementExpenses').value,
+        roi: document.getElementById('roi').value,
+        swr: document.getElementById('swr').value,
+        country: document.getElementById('countrySelect').value,
+      };
 
-    fig.add_trace(go.Scatter(
-        x=age,
-        y=cumulative_returns,
-        mode='lines',
-        name="Cumulative Returns",
-        line=dict(color="green")
-    ))
+      const response = await fetch('/calculate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
 
-    fig.add_trace(go.Scatter(
-        x=age,
-        y=portfolio_values,
-        mode='lines',
-        name="Total Net Worth",
-        line=dict(color="deepskyblue", width=3)
-    ))
+      const data = await response.json();
 
-    fig.add_trace(go.Scatter(
-        x=age,
-        y=[fire_number] * len(age),
-        mode='lines',
-        name="FIRE Number",
-        line=dict(color='red', dash='dash')
-    ))
-
-    if fire_year_exact is not None:
-        fig.add_trace(go.Scatter(
-            x=[fire_year_exact, fire_year_exact],
-            y=[0, fire_number],
-            mode='lines',
-            line=dict(color='lightgrey', dash='dot'),
-            showlegend=False
-        ))
-        fig.add_trace(go.Scatter(
-            x=[fire_year_exact],
-            y=[fire_number],
-            mode='markers',
-            marker=dict(color='red', size=10),
-            name="FIRE Marker",
-            showlegend=False
-        ))
-        fig.add_annotation(
-            x=fire_year_exact,
-            y=fire_number + (fire_number * 0.1),
-            text=f"{years_until_fi:.1f} years<br>(age {fire_year_exact:.1f})",
-            showarrow=False,
-            font=dict(size=14, color="white")
-        )
-
-    fig.update_layout(
-        title="Road to Financial Independence",
-        plot_bgcolor='black',
-        paper_bgcolor='black',
-        font=dict(color='white'),
-        legend=dict(font=dict(color='white')),
-        xaxis=dict(title="Age", color="white", gridcolor="rgba(200,200,200,0.2)"),
-        yaxis=dict(title="Portfolio Value ($)", color="white", gridcolor="rgba(200,200,200,0.2)"),
-    )
-
-    # ------------------- MAP -------------------
-    selected_col_index = df_col.loc[df_col["Country"] == selected_country, "COL_Index"].values[0]
-    df = df_col.copy()
-    df["Relative COL (%)"] = (df["COL_Index"] / selected_col_index) * 100
-    df["Adjusted Retirement Expenses ($)"] = (df["Relative COL (%)"] / 100) * retirement_expenses
-
-    def calc_fi_timeline(country_exp):
-        cp = initial_portfolio
-        savings = net_income - country_exp
-        target = (country_exp / swr) * 100
-        years = 0
-        while cp < target and years < 100:
-            cp += cp * (roi / 100) + savings
-            years += 1
-        return years - 1 + ((target - (cp - cp * (roi / 100) - savings)) / ((cp) - (cp - cp * (roi / 100) - savings)))
-
-    df["Updated FI Timeline (Years)"] = df["Adjusted Retirement Expenses ($)"].apply(calc_fi_timeline)
-    df["Display FI Timeline"] = df["Updated FI Timeline (Years)"].apply(lambda x: max(x, 0))
-
-    fig_map = px.choropleth(
-        df,
-        locations="Country",
-        locationmode="country names",
-        color="Display FI Timeline",
-        hover_name="Country",
-        color_continuous_scale=[
-            (0.0, "darkgreen"),
-            (0.2, "lightgreen"),
-            (0.5, "yellow"),
-            (0.8, "orange"),
-            (1.0, "darkred")
-        ],
-        title="🌍 FI Timeline relocating to other countries (Map)",
-        labels={"Display FI Timeline": "Years to FI"}
-    )
-    fig_map.update_layout(
-        geo=dict(showcoastlines=True, projection_type="natural earth"),
-        margin={"r":0,"t":90,"l":0,"b":40},
-        coloraxis_colorbar=dict(title="Years to FI"),
-        title_x=0.15
-    )
-
-    fi_ready_count = (df["Updated FI Timeline (Years)"] <= 0.1).sum()
-    country_table = df[["Country", "Relative COL (%)", "Adjusted Retirement Expenses ($)", "Display FI Timeline"]]
-    country_table = country_table.sort_values(by="Display FI Timeline", ascending=False).round(1).to_dict(orient='records')
-
-    return jsonify({
-        'portfolioChart': fig.to_json(),
-        'mapChart': fig_map.to_json(),
-        'fireYear': round(fire_year_exact, 1),
-        'yearsUntilFI': round(years_until_fi, 1),
-        'fireNumber': round(fire_number),
-        'fiReadyCount': int(fi_ready_count),
-        'countryTable': country_table
-    })
+      document.getElementById('summary').innerHTML = 
+        <div style="background-color: rgba(76, 175, 80, 0.15); padding: 15px; border-radius: 10px; margin-top: 20px;">
+          🎯 You will reach FI in <b>${data.yearsUntilFI}</b> years (age <b>${data.fireYear}</b>)<br>
+          💼 Your target portfolio: <b>$${data.fireNumber.toLocaleString()}</b><br>
+          🌍 You could already retire in <b>${data.fiReadyCount}</b> countries
+        </div>;
 
 
+      const fig = JSON.parse(data.portfolioChart);
+      Plotly.newPlot('portfolioChart', fig.data, fig.layout);
+      const map = JSON.parse(data.mapChart);
+      Plotly.newPlot('mapChart', map.data, map.layout);
+      
+      const tableBody = document.querySelector('#countryTable tbody');
+      tableBody.innerHTML = '';
+      data.countryTable.forEach(row => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = <td>${row["Country"]}</td>
+                        <td>${row["Relative COL (%)"]}</td>
+                        <td>${row["Adjusted Retirement Expenses ($)"]}</td>
+                        <td>${row["Display FI Timeline"]}</td>;
+        tableBody.appendChild(tr);
+      });
+    }
+  </script>
+</body>
+</html>

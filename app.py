@@ -80,11 +80,21 @@ def calculate():
     fig = go.Figure()
 
     initial_layer = np.array([initial_portfolio] * len(age))
-    contributions_raw = np.array(cumulative_contributions)
-    returns_raw = np.array(cumulative_returns)
+    contributions_array = np.array(cumulative_contributions)
+    returns_array = np.array(cumulative_returns)
+    net_worth = np.array(portfolio_values)
     
-    # For better hover text
-    customdata = np.stack((initial_layer, contributions_raw, returns_raw), axis=-1)
+    # Generate hover text per point
+    hover_texts = [
+        f"<b>Age:</b> {a}<br>"
+        f"<b>Initial Portfolio:</b> ${initial_portfolio:,.0f}<br>"
+        f"<b>Cumulative Contributions:</b> ${c:,.0f}<br>"
+        f"<b>Cumulative Returns:</b> ${r:,.0f}<br>"
+        f"<b>Total Net Worth:</b> ${n:,.0f}"
+        for a, c, r, n in zip(age, contributions_array, returns_array, net_worth)
+    ]
+    
+    fig = go.Figure()
     
     # Initial Portfolio
     fig.add_trace(go.Scatter(
@@ -94,12 +104,12 @@ def calculate():
         mode='none',
         name="Initial Portfolio",
         fillcolor=colors["Initial Portfolio"],
-        customdata=customdata,
-        hovertemplate='Initial Portfolio: $%{customdata[0]:,.0f}<extra></extra>'
+        text=hover_texts,
+        hoverinfo='text'
     ))
     
     # Contributions
-    contributions_cumulative = initial_layer + contributions_raw
+    contributions_cumulative = initial_layer + contributions_array
     fig.add_trace(go.Scatter(
         x=age,
         y=contributions_cumulative,
@@ -107,12 +117,12 @@ def calculate():
         mode='none',
         name="Contributions",
         fillcolor=colors["Cumulative Contributions"],
-        customdata=customdata,
-        hovertemplate='Contributions: $%{customdata[1]:,.0f}<extra></extra>'
+        text=hover_texts,
+        hoverinfo='text'
     ))
     
     # Returns
-    returns_cumulative = contributions_cumulative + returns_raw
+    returns_cumulative = contributions_cumulative + returns_array
     fig.add_trace(go.Scatter(
         x=age,
         y=returns_cumulative,
@@ -120,24 +130,20 @@ def calculate():
         mode='none',
         name="Returns",
         fillcolor=colors["Cumulative Returns"],
-        customdata=customdata,
-        hovertemplate='Returns: $%{customdata[2]:,.0f}<extra></extra>'
+        text=hover_texts,
+        hoverinfo='text'
     ))
-
-    # Total Net Worth Line
-    fig.add_trace(go.Scatter(x=age, y=portfolio_values, mode='lines', name="Total Net Worth", line=dict(color=colors["Total Net Worth"], width=3)))
-
-    # FIRE Number Line
-    fig.add_trace(go.Scatter(x=age, y=[fire_number] * len(age), mode='lines', name="FIRE Number", line=dict(color='red', dash='dash')))
-
-    if fire_year_exact is not None:
-        fig.add_trace(go.Scatter(x=[fire_year_exact, fire_year_exact], y=[0, fire_number], mode='lines', line=dict(color='lightgrey', dash='dash'), showlegend=False))
-        fig.add_trace(go.Scatter(x=[fire_year_exact], y=[fire_number], mode='markers', marker=dict(color='red', size=10), name="FIRE Marker", showlegend=False))
-        fig.add_annotation(x=fire_year_exact, y=fire_number + (fire_number * 0.12), text=f"{years_until_fi:.1f} years<br>(age {fire_year_exact:.1f})", showarrow=False, font=dict(size=14, color="white"), align="center")
-
-    fig.update_layout(title=dict(text="Road to Financial Independence", x=0.5, xanchor="center", yanchor="top", font=dict(size=20, color="white")), plot_bgcolor='black', paper_bgcolor='black', font=dict(color='white'), legend=dict(font=dict(color='white')), showlegend=True)
-    fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor="rgba(200,200,200,0.3)", zeroline=True, zerolinecolor="white", color="white", title_text="Age", title_font=dict(size=14, color="white"), tickfont=dict(color="white"), showline=True, linecolor="white", range=[min(age), max(age)])
-    fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor="rgba(200,200,200,0.3)", zeroline=True, zerolinecolor="white", color="white", title_text="Portfolio Value ($)", title_font=dict(size=14, color="white"), tickfont=dict(color="white"), showline=True, linecolor="white", range=[0, max(portfolio_values) * 1.1])
+    
+    # Total Net Worth
+    fig.add_trace(go.Scatter(
+        x=age,
+        y=portfolio_values,
+        mode='lines',
+        name="Total Net Worth",
+        line=dict(color=colors["Total Net Worth"], width=3),
+        text=hover_texts,
+        hoverinfo='text'
+    ))
 
     selected_col_index = df_col.loc[df_col["Country"] == selected_country, "COL_Index"].values[0]
     df = df_col.copy()

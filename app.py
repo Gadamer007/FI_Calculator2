@@ -79,17 +79,50 @@ def calculate():
 
     fig = go.Figure()
 
-    # Initial Portfolio
     initial_layer = np.array([initial_portfolio] * len(age))
-    fig.add_trace(go.Scatter(x=age, y=initial_layer, fill='tozeroy', mode='none', name="Initial Portfolio", fillcolor=colors["Initial Portfolio"]))
-
-    # Cumulative Contributions
-    contributions_cumulative = np.array(cumulative_contributions) + initial_layer
-    fig.add_trace(go.Scatter(x=age, y=contributions_cumulative, fill='tonexty', mode='none', name="Contributions", fillcolor=colors["Cumulative Contributions"]))
-
-    # Cumulative Returns
-    returns_cumulative = np.array(cumulative_returns) + contributions_cumulative
-    fig.add_trace(go.Scatter(x=age, y=returns_cumulative, fill='tonexty', mode='none', name="Returns", fillcolor=colors["Cumulative Returns"]))
+    contributions_raw = np.array(cumulative_contributions)
+    returns_raw = np.array(cumulative_returns)
+    
+    # For better hover text
+    customdata = np.stack((initial_layer, contributions_raw, returns_raw), axis=-1)
+    
+    # Initial Portfolio
+    fig.add_trace(go.Scatter(
+        x=age,
+        y=initial_layer,
+        fill='tozeroy',
+        mode='none',
+        name="Initial Portfolio",
+        fillcolor=colors["Initial Portfolio"],
+        customdata=customdata,
+        hovertemplate='Initial Portfolio: $%{customdata[0]:,.0f}<extra></extra>'
+    ))
+    
+    # Contributions
+    contributions_cumulative = initial_layer + contributions_raw
+    fig.add_trace(go.Scatter(
+        x=age,
+        y=contributions_cumulative,
+        fill='tonexty',
+        mode='none',
+        name="Contributions",
+        fillcolor=colors["Cumulative Contributions"],
+        customdata=customdata,
+        hovertemplate='Contributions: $%{customdata[1]:,.0f}<extra></extra>'
+    ))
+    
+    # Returns
+    returns_cumulative = contributions_cumulative + returns_raw
+    fig.add_trace(go.Scatter(
+        x=age,
+        y=returns_cumulative,
+        fill='tonexty',
+        mode='none',
+        name="Returns",
+        fillcolor=colors["Cumulative Returns"],
+        customdata=customdata,
+        hovertemplate='Returns: $%{customdata[2]:,.0f}<extra></extra>'
+    ))
 
     # Total Net Worth Line
     fig.add_trace(go.Scatter(x=age, y=portfolio_values, mode='lines', name="Total Net Worth", line=dict(color=colors["Total Net Worth"], width=3)))

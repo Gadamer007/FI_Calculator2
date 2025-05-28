@@ -106,15 +106,6 @@ def calculate():
         name="Returns",
         fillcolor=colors["Cumulative Returns"]
     ))
-
-    fig.add_trace(go.Scatter(
-        x=age,
-        y=returns_cumulative,
-        fill='tonexty',
-        mode='none',
-        name="Returns",
-        fillcolor=colors["Cumulative Returns"]
-    ))
     
     # Net Worth Line
     fig.add_trace(go.Scatter(

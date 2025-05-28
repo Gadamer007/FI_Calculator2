@@ -65,7 +65,7 @@ def calculate():
             break
 
     colors = {
-        "Initial Portfolio": "rgba(160, 160, 160, 0.8)",
+        "Initial Portfolio": "rgba(120, 144, 156, 0.8)",
         "Cumulative Contributions": "rgba(255, 193, 7, 0.7)",
         "Cumulative Returns": "rgba(76, 175, 80, 0.7)",
         "Total Net Worth": "rgba(41, 182, 246, 1)",
@@ -73,29 +73,28 @@ def calculate():
 
     fig = go.Figure()
 
-    # Initial Portfolio Layer (grey background)
+    initial_layer = np.array([initial_portfolio] * len(age))
     fig.add_trace(go.Scatter(
         x=age,
-        y=[initial_portfolio] * len(age),
+        y=initial_layer,
         fill='tozeroy',
         mode='none',
         name="Initial Portfolio",
         fillcolor=colors["Initial Portfolio"]
     ))
-    
-    # Cumulative Contributions Layer (stacked on top)
-    contributions_cumulative = np.array(cumulative_contributions) + initial_portfolio
+
+    contributions_cumulative = np.array(cumulative_contributions)
+    contributions_layer = initial_layer + contributions_cumulative
     fig.add_trace(go.Scatter(
         x=age,
-        y=contributions_cumulative,
+        y=contributions_layer,
         fill='tonexty',
         mode='none',
         name="Contributions",
         fillcolor=colors["Cumulative Contributions"]
     ))
-    
-    # Cumulative Returns Layer (stacked on top)
-    returns_cumulative = contributions_cumulative + np.array(cumulative_returns)
+
+    returns_cumulative = contributions_layer + np.array(cumulative_returns)
     fig.add_trace(go.Scatter(
         x=age,
         y=returns_cumulative,
@@ -104,8 +103,7 @@ def calculate():
         name="Returns",
         fillcolor=colors["Cumulative Returns"]
     ))
-    
-    # Net Worth Line
+
     fig.add_trace(go.Scatter(
         x=age,
         y=portfolio_values,
@@ -113,8 +111,7 @@ def calculate():
         name="Total Net Worth",
         line=dict(color=colors["Total Net Worth"], width=3)
     ))
-    
-    # FIRE Threshold Line
+
     fig.add_trace(go.Scatter(
         x=age,
         y=[fire_number] * len(age),
@@ -158,7 +155,6 @@ def calculate():
     df["Updated FI Timeline (Years)"] = df["Adjusted Retirement Expenses ($)"].apply(calc_fi_timeline)
     df["Display FI Timeline"] = df["Updated FI Timeline (Years)"].apply(lambda x: max(x, 0))
 
-    
     fig_map = px.choropleth(
         df,
         locations="Country",
@@ -191,5 +187,6 @@ def calculate():
         'fiReadyCount': int(fi_ready_count),
         'countryTable': country_table
     })
+
 
 

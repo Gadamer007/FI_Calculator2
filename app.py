@@ -61,14 +61,25 @@ def calculate():
     years_until_fi = fire_year_exact - age_input
 
     # --- Portfolio Chart ---
+    contributions_cumulative = np.array(cumulative_contributions) + initial_portfolio
+    returns_cumulative = np.array(cumulative_returns) + contributions_cumulative
+
     fig = go.Figure()
+    fig.add_trace(go.Scatter(x=age, y=[initial_portfolio]*len(age), fill='tozeroy', mode='none', name="Initial Portfolio"))
+    fig.add_trace(go.Scatter(x=age, y=contributions_cumulative, fill='tonexty', mode='none', name="Contributions"))
+    fig.add_trace(go.Scatter(x=age, y=returns_cumulative, fill='tonexty', mode='none', name="Returns"))
     fig.add_trace(go.Scatter(x=age, y=portfolio_values, mode='lines', name='Total Net Worth'))
     fig.add_trace(go.Scatter(x=age, y=[fire_number]*len(age), mode='lines', name='FIRE Number', line=dict(dash='dash', color='red')))
+
     fig.update_layout(title='Portfolio Over Time', xaxis_title='Age', yaxis_title='Portfolio Value ($)')
     portfolio_chart_json = fig.to_json()
 
     # --- Country Comparison Map ---
-    selected_col_index = df_col.loc[df_col["Country"] == selected_country, "COL_Index"].values[0]
+    try:
+        selected_col_index = df_col.loc[df_col["Country"] == selected_country, "COL_Index"].values[0]
+    except IndexError:
+        return jsonify({'error': 'Selected country not found in dataset'}), 400
+
     df = df_col.copy()
     df["Relative COL (%)"] = (df["COL_Index"] / selected_col_index) * 100
     df["Adjusted Retirement Expenses ($)"] = (df["Relative COL (%)"] / 100) * retirement_expenses

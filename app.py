@@ -65,20 +65,63 @@ def calculate():
             break
 
     colors = {
-        "Initial Portfolio": "rgba(120, 144, 156, 0.8)",
+        "Initial Portfolio": "rgba(160, 160, 160, 0.8)",
         "Cumulative Contributions": "rgba(255, 193, 7, 0.7)",
         "Cumulative Returns": "rgba(76, 175, 80, 0.7)",
         "Total Net Worth": "rgba(41, 182, 246, 1)",
     }
 
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=age, y=[initial_portfolio] * len(age), fill='tozeroy', mode='none', name="Initial Portfolio", fillcolor=colors["Initial Portfolio"]))
-    contributions_cumulative = np.array(cumulative_contributions)
-    fig.add_trace(go.Scatter(x=age, y=contributions_cumulative, fill='tonexty', mode='none', name="Contributions", fillcolor=colors["Cumulative Contributions"]))
+
+    # Initial Portfolio Layer (grey background)
+    fig.add_trace(go.Scatter(
+        x=age,
+        y=[initial_portfolio] * len(age),
+        fill='tozeroy',
+        mode='none',
+        name="Initial Portfolio",
+        fillcolor=colors["Initial Portfolio"]
+    ))
+    
+    # Cumulative Contributions Layer (stacked on top)
+    contributions_cumulative = np.array(cumulative_contributions) + initial_portfolio
+    fig.add_trace(go.Scatter(
+        x=age,
+        y=contributions_cumulative,
+        fill='tonexty',
+        mode='none',
+        name="Contributions",
+        fillcolor=colors["Cumulative Contributions"]
+    ))
+    
+    # Cumulative Returns Layer (stacked on top)
     returns_cumulative = contributions_cumulative + np.array(cumulative_returns)
-    fig.add_trace(go.Scatter(x=age, y=returns_cumulative, fill='tonexty', mode='none', name="Returns", fillcolor=colors["Cumulative Returns"]))
-    fig.add_trace(go.Scatter(x=age, y=portfolio_values, mode='lines', name="Total Net Worth", line=dict(color=colors["Total Net Worth"], width=3)))
-    fig.add_trace(go.Scatter(x=age, y=[fire_number] * len(age), mode='lines', name="FIRE Number", line=dict(color='red', dash='dash')))
+    fig.add_trace(go.Scatter(
+        x=age,
+        y=returns_cumulative,
+        fill='tonexty',
+        mode='none',
+        name="Returns",
+        fillcolor=colors["Cumulative Returns"]
+    ))
+    
+    # Net Worth Line
+    fig.add_trace(go.Scatter(
+        x=age,
+        y=portfolio_values,
+        mode='lines',
+        name="Total Net Worth",
+        line=dict(color=colors["Total Net Worth"], width=3)
+    ))
+    
+    # FIRE Threshold Line
+    fig.add_trace(go.Scatter(
+        x=age,
+        y=[fire_number] * len(age),
+        mode='lines',
+        name="FIRE Number",
+        line=dict(color='red', dash='dash')
+    ))
 
     if fire_year_exact is not None:
         fig.add_trace(go.Scatter(x=[fire_year_exact, fire_year_exact], y=[0, fire_number], mode='lines', line=dict(color='lightgrey', dash='dash'), showlegend=False))

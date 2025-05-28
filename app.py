@@ -123,3 +123,4 @@ def calculate():
         'countryTable': country_table
     })
 
+

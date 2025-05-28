@@ -62,16 +62,10 @@ def calculate():
         if portfolio_values[i] < fire_number and portfolio_values[i + 1] >= fire_number:
             fire_year_exact = age[i] + ((fire_number - portfolio_values[i]) / (portfolio_values[i + 1] - portfolio_values[i])) * (age[i + 1] - age[i])
             years_until_fi = fire_year_exact - age_input
-
-            # Insert interpolated point for FIRE
-            age.insert(i + 1, fire_year_exact)
-            portfolio_values.insert(i + 1, fire_number)
-            cumulative_contributions.insert(i + 1, cumulative_contributions[i])
-            cumulative_returns.insert(i + 1, cumulative_returns[i])
             break
 
     colors = {
-        "Initial Portfolio": "rgba(120, 144, 156, 0.8)",
+        "Initial Portfolio": "rgba(160, 160, 160, 0.8)",
         "Cumulative Contributions": "rgba(255, 193, 7, 0.7)",
         "Cumulative Returns": "rgba(76, 175, 80, 0.7)",
         "Total Net Worth": "rgba(41, 182, 246, 1)",
@@ -79,71 +73,72 @@ def calculate():
 
     fig = go.Figure()
 
-    initial_layer = np.array([initial_portfolio] * len(age))
-    contributions_array = np.array(cumulative_contributions)
-    returns_array = np.array(cumulative_returns)
-    net_worth = np.array(portfolio_values)
-    
-    # Generate hover text per point
-    hover_texts = [
-        f"<b>Age:</b> {a}<br>"
-        f"<b>Initial Portfolio:</b> ${initial_portfolio:,.0f}<br>"
-        f"<b>Cumulative Contributions:</b> ${c:,.0f}<br>"
-        f"<b>Cumulative Returns:</b> ${r:,.0f}<br>"
-        f"<b>Total Net Worth:</b> ${n:,.0f}"
-        for a, c, r, n in zip(age, contributions_array, returns_array, net_worth)
-    ]
-    
-    fig = go.Figure()
-    
-    # Initial Portfolio
+    # Initial Portfolio Layer (grey background)
     fig.add_trace(go.Scatter(
         x=age,
-        y=initial_layer,
+        y=[initial_portfolio] * len(age),
         fill='tozeroy',
         mode='none',
         name="Initial Portfolio",
-        fillcolor=colors["Initial Portfolio"],
-        text=hover_texts,
-        hoverinfo='text'
+        fillcolor=colors["Initial Portfolio"]
     ))
     
-    # Contributions
-    contributions_cumulative = initial_layer + contributions_array
+    # Cumulative Contributions Layer (stacked on top)
+    contributions_cumulative = np.array(cumulative_contributions) + initial_portfolio
     fig.add_trace(go.Scatter(
         x=age,
         y=contributions_cumulative,
         fill='tonexty',
         mode='none',
         name="Contributions",
-        fillcolor=colors["Cumulative Contributions"],
-        text=hover_texts,
-        hoverinfo='text'
+        fillcolor=colors["Cumulative Contributions"]
     ))
     
-    # Returns
-    returns_cumulative = contributions_cumulative + returns_array
+    # Cumulative Returns Layer (stacked on top)
+    returns_cumulative = contributions_cumulative + np.array(cumulative_returns)
     fig.add_trace(go.Scatter(
         x=age,
         y=returns_cumulative,
         fill='tonexty',
         mode='none',
         name="Returns",
-        fillcolor=colors["Cumulative Returns"],
-        text=hover_texts,
-        hoverinfo='text'
+        fillcolor=colors["Cumulative Returns"]
     ))
     
-    # Total Net Worth
+    # Net Worth Line
     fig.add_trace(go.Scatter(
         x=age,
         y=portfolio_values,
         mode='lines',
         name="Total Net Worth",
-        line=dict(color=colors["Total Net Worth"], width=3),
-        text=hover_texts,
-        hoverinfo='text'
+        line=dict(color=colors["Total Net Worth"], width=3)
     ))
+    
+    # FIRE Threshold Line
+    fig.add_trace(go.Scatter(
+        x=age,
+        y=[fire_number] * len(age),
+        mode='lines',
+        name="FIRE Number",
+        line=dict(color='red', dash='dash')
+    ))
+
+    if fire_year_exact is not None:
+        fig.add_trace(go.Scatter(x=[fire_year_exact, fire_year_exact], y=[0, fire_number], mode='lines', line=dict(color='lightgrey', dash='dash'), showlegend=False))
+        lower_index = max(i for i in range(len(age)) if age[i] <= fire_year_exact)
+        upper_index = min(i for i in range(len(age)) if age[i] >= fire_year_exact)
+        weight_upper = (fire_year_exact - age[lower_index]) / (age[upper_index] - age[lower_index])
+        weight_lower = 1 - weight_upper
+        interpolated_contributions = cumulative_contributions[lower_index] * weight_lower + cumulative_contributions[upper_index] * weight_upper
+        interpolated_returns = cumulative_returns[lower_index] * weight_lower + cumulative_returns[upper_index] * weight_upper
+        interpolated_net_worth = portfolio_values[lower_index] * weight_lower + portfolio_values[upper_index] * weight_upper
+        fire_hover_text = f"<b>Age:</b> {fire_year_exact:.1f}<br><b>Initial Portfolio:</b> ${initial_portfolio:,.0f}<br><b>Cumulative Contributions:</b> ${interpolated_contributions:,.0f}<br><b>Cumulative Returns:</b> ${interpolated_returns:,.0f}<br><b>Total Net Worth:</b> ${interpolated_net_worth:,.0f}"
+        fig.add_trace(go.Scatter(x=[fire_year_exact], y=[fire_number], mode='markers', marker=dict(color='red', size=10), name="FIRE Marker", hoverinfo="text", text=[fire_hover_text], showlegend=False))
+        fig.add_annotation(x=fire_year_exact, y=fire_number + (fire_number * 0.12), text=f"{years_until_fi:.1f} years<br>(age {fire_year_exact:.1f})", showarrow=False, font=dict(size=14, color="white"), align="center")
+
+    fig.update_layout(title=dict(text="Road to Financial Independence", x=0.5, xanchor="center", yanchor="top", font=dict(size=20, color="white")), plot_bgcolor='black', paper_bgcolor='black', font=dict(color='white'), legend=dict(font=dict(color='white')), showlegend=True)
+    fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor="rgba(200,200,200,0.3)", zeroline=True, zerolinecolor="white", color="white", title_text="Age", title_font=dict(size=14, color="white"), tickfont=dict(color="white"), showline=True, linecolor="white", range=[min(age), max(age)])
+    fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor="rgba(200,200,200,0.3)", zeroline=True, zerolinecolor="white", color="white", title_text="Portfolio Value ($)", title_font=dict(size=14, color="white"), tickfont=dict(color="white"), showline=True, linecolor="white", range=[0, max(portfolio_values) * 1.1])
 
     selected_col_index = df_col.loc[df_col["Country"] == selected_country, "COL_Index"].values[0]
     df = df_col.copy()
@@ -163,7 +158,24 @@ def calculate():
     df["Updated FI Timeline (Years)"] = df["Adjusted Retirement Expenses ($)"].apply(calc_fi_timeline)
     df["Display FI Timeline"] = df["Updated FI Timeline (Years)"].apply(lambda x: max(x, 0))
 
-    fig_map = px.choropleth(df, locations="Country", locationmode="country names", color="Display FI Timeline", hover_name="Country", color_continuous_scale=[(0.0, "darkgreen"), (0.2, "lightgreen"), (0.5, "yellow"), (0.8, "orange"), (1.0, "darkred")], title="🌍 FI Timeline relocating to other countries (Map)", labels={"Display FI Timeline": "Years to FI"})
+    
+    fig_map = px.choropleth(
+        df,
+        locations="Country",
+        locationmode="country names",
+        color="Display FI Timeline",
+        hover_name="Country",
+        color_continuous_scale=[
+            (0.0, "darkgreen"),
+            (0.2, "lightgreen"),
+            (0.5, "yellow"),
+            (0.8, "orange"),
+            (1.0, "darkred")
+        ],
+        title="🌍 FI Timeline relocating to other countries (Map)",
+        labels={"Display FI Timeline": "Years to FI"}
+    )
+
     fig_map.update_layout(geo=dict(showcoastlines=True, projection_type="natural earth"), margin={"r":0,"t":90,"l":0,"b":40}, coloraxis_colorbar=dict(title="Years to FI"), title_x=0.15)
 
     fi_ready_count = (df["Updated FI Timeline (Years)"] <= 0.1).sum()
@@ -175,10 +187,11 @@ def calculate():
         'mapChart': fig_map.to_json(),
         'fireYear': round(fire_year_exact, 1),
         'yearsUntilFI': round(years_until_fi, 1),
-        'fireNumber': round(fire_number, 1),
+        'fireNumber': round(fire_number),
         'fiReadyCount': int(fi_ready_count),
         'countryTable': country_table
     })
+
 
 
 

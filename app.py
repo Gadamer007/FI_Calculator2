@@ -73,28 +73,29 @@ def calculate():
 
     fig = go.Figure()
 
-    initial_layer = np.array([initial_portfolio] * len(age))
+        # Initial Portfolio
     fig.add_trace(go.Scatter(
         x=age,
-        y=initial_layer,
+        y=[initial_portfolio] * len(age),
         fill='tozeroy',
         mode='none',
         name="Initial Portfolio",
         fillcolor=colors["Initial Portfolio"]
     ))
 
-    contributions_cumulative = np.array(cumulative_contributions)
-    contributions_layer = initial_layer + contributions_cumulative
+    # Cumulative Contributions (stacked on top of initial portfolio)
+    contributions_cumulative = np.array(cumulative_contributions) + initial_portfolio
     fig.add_trace(go.Scatter(
         x=age,
-        y=contributions_layer,
+        y=contributions_cumulative,
         fill='tonexty',
         mode='none',
         name="Contributions",
         fillcolor=colors["Cumulative Contributions"]
     ))
 
-    returns_cumulative = contributions_layer + np.array(cumulative_returns)
+    # Cumulative Returns (stacked on top of contributions)
+    returns_cumulative = contributions_cumulative + np.array(cumulative_returns)
     fig.add_trace(go.Scatter(
         x=age,
         y=returns_cumulative,

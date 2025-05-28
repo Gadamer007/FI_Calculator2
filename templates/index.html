@@ -27,7 +27,7 @@
   </label>
 
   <label>Net Annual Income ($):
-    <input type="number" id="netIncome" value="85000">
+    <input type="number" id="netIncome" value="85000",step="1000">
   </label>
 
   <label>Current Portfolio Value ($):
@@ -100,10 +100,13 @@
 
       const data = await response.json();
 
-      document.getElementById('summary').innerHTML =
-        `🎯 You will reach FI in <b>${data.yearsUntilFI}</b> years (age <b>${data.fireYear}</b>)<br>
-         💼 Your target portfolio: <b>$${data.fireNumber.toLocaleString()}</b><br>
-         🌍 You could already retire in <b>${data.fiReadyCount}</b> countries`;
+      document.getElementById('summary').innerHTML = `
+        <div style="background-color: rgba(76, 175, 80, 0.15); padding: 15px; border-radius: 10px; margin-top: 20px;">
+          🎯 You will reach FI in <b>${data.yearsUntilFI}</b> years (age <b>${data.fireYear}</b>)<br>
+          💼 Your target portfolio: <b>$${data.fireNumber.toLocaleString()}</b><br>
+          🌍 You could already retire in <b>${data.fiReadyCount}</b> countries
+        </div>`;
+
 
       Plotly.newPlot('portfolioChart', JSON.parse(data.portfolioChart).data, JSON.parse(data.portfolioChart).layout);
       Plotly.newPlot('mapChart', JSON.parse(data.mapChart).data, JSON.parse(data.mapChart).layout);

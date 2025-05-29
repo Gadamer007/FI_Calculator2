@@ -66,11 +66,50 @@ def calculate():
 
     # Line Plot (no stacking)
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=age, y=[initial_portfolio]*len(age), mode='lines', name='Initial Portfolio', line=dict(color='gray', dash='dash')))
-    fig.add_trace(go.Scatter(x=age, y=cumulative_contributions, mode='lines', name='Cumulative Contributions', line=dict(color='gold')))
-    fig.add_trace(go.Scatter(x=age, y=cumulative_returns, mode='lines', name='Cumulative Returns', line=dict(color='green')))
-    fig.add_trace(go.Scatter(x=age, y=portfolio_values, mode='lines', name='Total Net Worth', line=dict(color='deepskyblue', width=3)))
-    fig.add_trace(go.Scatter(x=age, y=[fire_number]*len(age), mode='lines', name='FIRE Number', line=dict(color='red', dash='dash')))
+
+    initial_layer = np.array([initial_portfolio] * len(age))
+    contributions_layer = initial_layer + np.array(cumulative_contributions)
+    returns_layer = contributions_layer + np.array(cumulative_returns)
+    
+    # Initial Portfolio (base area)
+    fig.add_trace(go.Scatter(
+        x=age,
+        y=initial_layer,
+        fill='tozeroy',
+        mode='none',
+        name='Initial Portfolio',
+        fillcolor='rgba(160, 160, 160, 0.8)'
+    ))
+    
+    # Contributions (stacked on top)
+    fig.add_trace(go.Scatter(
+        x=age,
+        y=contributions_layer,
+        fill='tonexty',
+        mode='none',
+        name='Contributions',
+        fillcolor='rgba(255, 193, 7, 0.6)'
+    ))
+    
+    # Returns (stacked on top)
+    fig.add_trace(go.Scatter(
+        x=age,
+        y=returns_layer,
+        fill='tonexty',
+        mode='none',
+        name='Returns',
+        fillcolor='rgba(76, 175, 80, 0.6)'
+    ))
+    
+    # Total Net Worth (line on top)
+    fig.add_trace(go.Scatter(
+        x=age,
+        y=portfolio_values,
+        mode='lines',
+        name='Total Net Worth',
+        line=dict(color='deepskyblue', width=3)
+    ))
+
 
     if fire_year_exact is not None:
         fig.add_trace(go.Scatter(
@@ -89,12 +128,19 @@ def calculate():
         )
 
     fig.update_layout(
-        title="Road to Financial Independence",
-        plot_bgcolor='black', paper_bgcolor='black',
+        title=dict(
+            text="Road to Financial Independence",
+            x=0.5,  # Centers the title
+            xanchor="center",
+            font=dict(size=20, color="white")
+        ),
+        plot_bgcolor='black',
+        paper_bgcolor='black',
         font=dict(color='white'),
         xaxis=dict(title="Age", color="white", gridcolor="rgba(200,200,200,0.2)"),
         yaxis=dict(title="Portfolio Value ($)", color="white", gridcolor="rgba(200,200,200,0.2)")
     )
+
 
     # ------------------- MAP -------------------
     selected_col_index = df_col.loc[df_col["Country"] == selected_country, "COL_Index"].values[0]

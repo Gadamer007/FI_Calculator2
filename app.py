@@ -1,201 +1,206 @@
 from flask import Flask, render_template, request, jsonify
 import pandas as pd
+import numpy as np
 import plotly.graph_objs as go
 import plotly.express as px
-import numpy as np
 
 app = Flask(__name__)
 
-# Load Excel data
+# Load Excel data once at startup
 xls_url = "https://raw.githubusercontent.com/Gadamer007/FI_Calculator/main/Col_Sal.xlsx"
 df_col = pd.read_excel(xls_url, sheet_name="Country", usecols=["Country", "Col"])
-df_col.columns = ["Country", "COL_Index"]
+df_col.rename(columns={"Col": "COL_Index"}, inplace=True)
 df_col.dropna(inplace=True)
 
 @app.route('/')
 def index():
-    countries = df_col["Country"].unique().tolist()
+    countries = df_col["Country"].tolist()
     return render_template("index.html", countries=countries)
 
 @app.route('/calculate', methods=['POST'])
 def calculate():
     data = request.get_json()
     initial_portfolio = float(data['initialPortfolio'])
-    annual_expenses = float(data['annualExpenses'])
-    net_income = float(data['netIncome'])
-    roi = float(data['roi'])
-    swr = float(data['swr'])
-    retirement_expenses = float(data['retirementExpenses'])
-    age_input = int(data['age'])
-    selected_country = data['country']
+    annual_expenses    = float(data['annualExpenses'])
+    net_income         = float(data['netIncome'])
+    roi                = float(data['roi'])
+    swr                = float(data['swr'])
+    retirement_exp     = float(data['retirementExpenses'])
+    age_input          = int(data['age'])
+    selected_country   = data['country']
 
-    current_portfolio = initial_portfolio
-    fire_number = (annual_expenses / swr) * 100
+    # FIRE number and annual savings
+    fire_number    = (annual_expenses / swr) * 100
     annual_savings = net_income - annual_expenses
-    age = []
-    portfolio_values = []
-    cumulative_contributions = []
-    cumulative_returns = []
-    total_contributions = 0
-    years = 0
 
+    # Build time series until FIRE + 3 more years
+    ages                   = []
+    portfolio_values       = []
+    cumulative_contrib     = []
+    cumulative_returns     = []
+    total_contrib          = 0.0
+    current_portfolio      = initial_portfolio
+    year_idx               = 0
+
+    # simulate up to FIRE
     while current_portfolio < fire_number:
-        age.append(age_input + years)
+        ages.append(age_input + year_idx)
         portfolio_values.append(current_portfolio)
-        cumulative_contributions.append(total_contributions)
-        cumulative_returns.append(current_portfolio - total_contributions - initial_portfolio)
-        current_portfolio += current_portfolio * (roi / 100) + annual_savings
-        total_contributions += annual_savings
-        years += 1
+        cumulative_contrib.append(total_contrib)
+        cumulative_returns.append(current_portfolio - total_contrib - initial_portfolio)
 
+        # compound + save
+        current_portfolio = current_portfolio * (1 + roi/100) + annual_savings
+        total_contrib += annual_savings
+        year_idx += 1
+
+    # extend 3 additional years
     for _ in range(3):
-        age.append(age[-1] + 1)
+        ages.append(ages[-1] + 1)
         portfolio_values.append(current_portfolio)
-        cumulative_contributions.append(total_contributions)
-        cumulative_returns.append(current_portfolio - total_contributions - initial_portfolio)
-        current_portfolio += current_portfolio * (roi / 100) + annual_savings
-        total_contributions += annual_savings
+        cumulative_contrib.append(total_contrib)
+        cumulative_returns.append(current_portfolio - total_contrib - initial_portfolio)
+        current_portfolio = current_portfolio * (1 + roi/100) + annual_savings
+        total_contrib += annual_savings
 
+    # interpolate exact FIRE age
     fire_year_exact = None
-    years_until_fi = None
-    for i in range(len(portfolio_values) - 1):
-        if portfolio_values[i] < fire_number and portfolio_values[i + 1] >= fire_number:
-            fire_year_exact = age[i] + ((fire_number - portfolio_values[i]) / (portfolio_values[i + 1] - portfolio_values[i])) * (age[i + 1] - age[i])
-            years_until_fi = fire_year_exact - age_input
+    years_until_fi  = None
+    for i in range(len(portfolio_values)-1):
+        if portfolio_values[i] < fire_number <= portfolio_values[i+1]:
+            frac = (fire_number - portfolio_values[i]) / (portfolio_values[i+1] - portfolio_values[i])
+            fire_year_exact = ages[i] + frac*(ages[i+1]-ages[i])
+            years_until_fi  = fire_year_exact - age_input
             break
 
-    # Line Plot (no stacking)
+    # prepare stacked arrays
+    initial_layer      = np.full(len(ages), initial_portfolio)
+    contributions_layer= initial_layer + np.array(cumulative_contrib)
+    returns_layer      = contributions_layer + np.array(cumulative_returns)
+
+    # build figure
     fig = go.Figure()
 
-    initial_layer = np.array([initial_portfolio] * len(age))
-    contributions_layer = np.array(cumulative_contributions)
-    returns_layer = np.array(cumulative_returns)
-
-    
-    # Initial Portfolio
+    # 1) Initial Portfolio
     fig.add_trace(go.Scatter(
-        x=age,
-        y=initial_layer,
-        fill='tozeroy',
-        mode='none',
+        x=ages, y=initial_layer,
+        fill='tozeroy', mode='none',
         name='Initial Portfolio',
-        fillcolor='rgba(160, 160, 160, 0.8)'
+        fillcolor='rgba(120,144,156,0.8)'
     ))
-    
-    # Contributions (stacked on top of initial)
+
+    # 2) Contributions
     fig.add_trace(go.Scatter(
-        x=age,
-        y=initial_layer + contributions_layer,
-        fill='tonexty',
-        mode='none',
+        x=ages, y=contributions_layer,
+        fill='tonexty', mode='none',
         name='Contributions',
-        fillcolor='rgba(255, 193, 7, 0.6)'
+        fillcolor='rgba(255,193,7,0.6)'
     ))
-    
-    # Returns (stacked on top of contributions)
+
+    # 3) Returns
     fig.add_trace(go.Scatter(
-        x=age,
-        y=initial_layer + contributions_layer + returns_layer,
-        fill='tonexty',
-        mode='none',
+        x=ages, y=returns_layer,
+        fill='tonexty', mode='none',
         name='Returns',
-        fillcolor='rgba(76, 175, 80, 0.6)'
+        fillcolor='rgba(76,175,80,0.6)'
     ))
-    
-    # Total Net Worth (line on top)
+
+    # 4) Total Net Worth line
     fig.add_trace(go.Scatter(
-        x=age,
-        y=portfolio_values,
-        mode='lines',
-        name='Total Net Worth',
+        x=ages, y=portfolio_values,
+        mode='lines', name='Total Net Worth',
         line=dict(color='deepskyblue', width=3)
     ))
 
+    # 5) FIRE threshold line
+    fig.add_trace(go.Scatter(
+        x=ages, y=[fire_number]*len(ages),
+        mode='lines', name='FIRE Number',
+        line=dict(color='red', dash='dash')
+    ))
 
+    # vertical marker & annotation at FIRE
     if fire_year_exact is not None:
         fig.add_trace(go.Scatter(
             x=[fire_year_exact, fire_year_exact], y=[0, fire_number],
-            mode='lines', line=dict(color='lightgrey', dash='dot'), showlegend=False
+            mode='lines', showlegend=False,
+            line=dict(color='lightgrey', dash='dot')
         ))
         fig.add_trace(go.Scatter(
             x=[fire_year_exact], y=[fire_number],
-            mode='markers', marker=dict(color='red', size=10),
-            name="FIRE Marker", showlegend=False
+            mode='markers', showlegend=False,
+            marker=dict(color='red', size=10)
         ))
         fig.add_annotation(
-            x=fire_year_exact, y=fire_number * 1.1,
-            text=f"{years_until_fi:.1f} years<br>(age {fire_year_exact:.1f})",
-            showarrow=False, font=dict(size=14, color="white")
+            x=fire_year_exact, y=fire_number * 1.05,
+            text=f"{years_until_fi:.1f} yrs (age {fire_year_exact:.1f})",
+            showarrow=False,
+            font=dict(color='white')
         )
 
+    # layout
     fig.update_layout(
-        title=dict(
-            text="Road to Financial Independence",
-            x=0.5,  # Centers the title
-            xanchor="center",
-            font=dict(size=20, color="white")
-        ),
-        plot_bgcolor='black',
-        paper_bgcolor='black',
+        title=dict(text="Road to Financial Independence", x=0.5),
+        plot_bgcolor='black', paper_bgcolor='black',
         font=dict(color='white'),
-        xaxis=dict(title="Age", color="white", gridcolor="rgba(200,200,200,0.2)"),
-        yaxis=dict(title="Portfolio Value ($)", color="white", gridcolor="rgba(200,200,200,0.2)")
+        xaxis=dict(title="Age", color='white', gridcolor='rgba(255,255,255,0.2)'),
+        yaxis=dict(title="Portfolio Value ($)", color='white', gridcolor='rgba(255,255,255,0.2)')
     )
 
-
-    # ------------------- MAP -------------------
-    selected_col_index = df_col.loc[df_col["Country"] == selected_country, "COL_Index"].values[0]
+    # ——————————————————————————————————————————————————————
+    # now build the map exactly as before...
+    selected_col_index = df_col.loc[df_col.Country==selected_country, "COL_Index"].iloc[0]
     df = df_col.copy()
-    df["Relative COL (%)"] = (df["COL_Index"] / selected_col_index) * 100
-    df["Adjusted Retirement Expenses ($)"] = (df["Relative COL (%)"] / 100) * retirement_expenses
+    df["Relative COL (%)"] = df.COL_Index / selected_col_index * 100
+    df["Adjusted Retirement Expenses ($)"] = df["Relative COL (%)"]/100 * retirement_exp
 
     def calc_fi_timeline(country_exp):
-        cp = initial_portfolio
+        cp      = initial_portfolio
         savings = net_income - country_exp
-        target = (country_exp / swr) * 100
-        years = 0
-        while cp < target and years < 100:
-            cp += cp * (roi / 100) + savings
-            years += 1
-        return years - 1 + ((target - (cp - cp * (roi / 100) - savings)) / ((cp) - (cp - cp * (roi / 100) - savings)))
+        target  = country_exp / swr * 100
+        yrs     = 0
+        while cp < target and yrs<100:
+            cp += cp*(roi/100) + savings
+            yrs += 1
+        return yrs - 1 + (target - (cp - cp*(roi/100) - savings)) / ((cp) - (cp - cp*(roi/100) - savings))
 
     df["Updated FI Timeline (Years)"] = df["Adjusted Retirement Expenses ($)"].apply(calc_fi_timeline)
-    df["Display FI Timeline"] = df["Updated FI Timeline (Years)"].apply(lambda x: max(x, 0))
+    df["Display FI Timeline"] = df["Updated FI Timeline (Years)"].clip(lower=0)
 
     fig_map = px.choropleth(
-        df,
-        locations="Country", locationmode="country names",
+        df, locations="Country", locationmode="country names",
         color="Display FI Timeline", hover_name="Country",
         color_continuous_scale=[
-            (0.0, "darkgreen"),
-            (0.2, "lightgreen"),
-            (0.5, "yellow"),
-            (0.8, "orange"),
-            (1.0, "darkred")
+            (0.0,"darkgreen"),(0.2,"lightgreen"),
+            (0.5,"yellow"),(0.8,"orange"),(1.0,"darkred")
         ],
         title="🌍 FI Timeline relocating to other countries (Map)",
-        labels={"Display FI Timeline": "Years to FI"}
+        labels={"Display FI Timeline":"Years to FI"}
     )
     fig_map.update_layout(
         geo=dict(showcoastlines=True, projection_type="natural earth"),
-        margin={"r":0,"t":90,"l":0,"b":40},
+        margin=dict(r=0,t=90,l=0,b=40),
         coloraxis_colorbar=dict(title="Years to FI"),
         title_x=0.15
     )
 
-    fi_ready_count = (df["Updated FI Timeline (Years)"] <= 0.1).sum()
-    country_table = df[["Country", "Relative COL (%)", "Adjusted Retirement Expenses ($)", "Display FI Timeline"]]
-    country_table = country_table.sort_values(by="Display FI Timeline", ascending=False).round(1).to_dict(orient='records')
+    fi_ready_count = int((df["Updated FI Timeline (Years)"]<=0.1).sum())
+    country_table = df[["Country","Relative COL (%)","Adjusted Retirement Expenses ($)","Display FI Timeline"]]
+    country_table = country_table.sort_values("Display FI Timeline", ascending=False).round(1).to_dict("records")
 
-    return jsonify({
-        'portfolioChart': fig.to_json(),
-        'mapChart': fig_map.to_json(),
-        'fireYear': round(fire_year_exact, 1),
-        'yearsUntilFI': round(years_until_fi, 1),
-        'fireNumber': round(fire_number),
-        'fiReadyCount': int(fi_ready_count),
-        'countryTable': country_table
-    })
+    return jsonify(
+        portfolioChart=fig.to_json(),
+        mapChart=fig_map.to_json(),
+        fireYear=round(fire_year_exact,1) if fire_year_exact else None,
+        yearsUntilFI=round(years_until_fi,1) if years_until_fi else None,
+        fireNumber=round(fire_number,1),
+        fiReadyCount=fi_ready_count,
+        countryTable=country_table
+    )
+
+if __name__ == '__main__':
+    app.run(debug=True)
+
 
 
 

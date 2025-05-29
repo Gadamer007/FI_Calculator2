@@ -100,12 +100,13 @@
 
       const data = await response.json();
 
-      document.getElementById('summary').innerHTML = 
+      document.getElementById('summary').innerHTML = `
         <div style="background-color: rgba(76, 175, 80, 0.15); padding: 15px; border-radius: 10px; margin-top: 20px;">
           🎯 You will reach FI in <b>${data.yearsUntilFI}</b> years (age <b>${data.fireYear}</b>)<br>
           💼 Your target portfolio: <b>$${data.fireNumber.toLocaleString()}</b><br>
           🌍 You could already retire in <b>${data.fiReadyCount}</b> countries
-        </div>;
+        </div>`;
+
 
 
       const fig = JSON.parse(data.portfolioChart);
@@ -117,10 +118,12 @@
       tableBody.innerHTML = '';
       data.countryTable.forEach(row => {
         const tr = document.createElement('tr');
-        tr.innerHTML = <td>${row["Country"]}</td>
-                        <td>${row["Relative COL (%)"]}</td>
-                        <td>${row["Adjusted Retirement Expenses ($)"]}</td>
-                        <td>${row["Display FI Timeline"]}</td>;
+        tr.innerHTML = `
+          <td>${row["Country"]}</td>
+          <td>${row["Relative COL (%)"]}</td>
+          <td>${row["Adjusted Retirement Expenses ($)"]}</td>
+          <td>${row["Display FI Timeline"]}</td>`;
+
         tableBody.appendChild(tr);
       });
     }

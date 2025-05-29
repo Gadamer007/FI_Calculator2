@@ -16,13 +16,13 @@
 
   <!-- inputs -->
   <label>Current Age:<input id="age" type="number" value="30"/></label>
-  <label>Net Income ($):<input id="netIncome" type="number" value="88000"/></label>
-  <label>Portfolio ($):<input id="initialPortfolio" type="number" value="200000"/></label>
-  <label>Expenses ($):<input id="annualExpenses" type="number" value="41000"/></label>
-  <label>Retire Expenses ($):<input id="retirementExpenses" type="number" value="41000"/></label>
-  <label>ROI (%):<input id="roi" type="number" step="0.1" value="7"/></label>
-  <label>SWR (%):<input id="swr" type="number" step="0.1" value="4"/></label>
-  <label>Country:
+  <label>Net Annual Income ($):<input id="netIncome" type="number" value="88000"/></label>
+  <label>Current Portfolio Value ($):<input id="initialPortfolio" type="number" value="200000"/></label>
+  <label>Current Annual Expenses ($):<input id="annualExpenses" type="number" value="41000"/></label>
+  <label>Estimated Annual Expenses in Retirement ($):<input id="retirementExpenses" type="number" value="41000"/></label>
+  <label>Annual Return on Investment (%):<input id="roi" type="number" step="0.1" value="7"/></label>
+  <label>Safe Withdrawal Rate (%):<input id="swr" type="number" step="0.1" value="4"/></label>
+  <label>Current Country:
     <select id="countrySelect">
       {% for c in countries %}
         <option>{{c}}</option>

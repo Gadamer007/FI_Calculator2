@@ -74,43 +74,45 @@ def calculate():
             break
 
     # prepare stacked arrays
-    initial_layer      = np.full(len(ages), initial_portfolio)
-    contributions_layer= initial_layer + np.array(cumulative_contrib)
-    returns_layer      = contributions_layer + np.array(cumulative_returns)
+    initial_layer       = np.array([initial_portfolio] * len(age))
+    contributions_layer = initial_layer + np.array(cumulative_contributions)
+    returns_layer       = contributions_layer + np.array(cumulative_returns)
+
 
     # build figure
     fig = go.Figure()
 
     # 1) Initial Portfolio
     fig.add_trace(go.Scatter(
-        x=ages, y=initial_layer,
+        x=age, y=initial_layer,
         fill='tozeroy', mode='none',
         name='Initial Portfolio',
         fillcolor='rgba(120,144,156,0.8)'
     ))
-
+    
     # 2) Contributions
     fig.add_trace(go.Scatter(
-        x=ages, y=contributions_layer,
+        x=age, y=contributions_layer,
         fill='tonexty', mode='none',
         name='Contributions',
         fillcolor='rgba(255,193,7,0.6)'
     ))
-
+    
     # 3) Returns
     fig.add_trace(go.Scatter(
-        x=ages, y=returns_layer,
+        x=age, y=returns_layer,
         fill='tonexty', mode='none',
         name='Returns',
         fillcolor='rgba(76,175,80,0.6)'
     ))
-
-    # 4) Total Net Worth line
+    
+    # 4) Total Net Worth on top
     fig.add_trace(go.Scatter(
-        x=ages, y=portfolio_values,
+        x=age, y=portfolio_values,
         mode='lines', name='Total Net Worth',
         line=dict(color='deepskyblue', width=3)
     ))
+
 
     # 5) FIRE threshold line
     fig.add_trace(go.Scatter(

@@ -45,7 +45,7 @@
       {% endfor %}
     </select>
   </label>
-  <button onclick="runCalculator()">Calculate</button>
+
 
   <div id="results">
     <h3>Results</h3>
@@ -67,51 +67,61 @@
   </div>
 
   <script>
-    async function runCalculator(){
+    async function runCalculator() {
       const payload = {
-        age:               +document.getElementById('age').value,
-        netIncome:         +document.getElementById('netIncome').value,
-        initialPortfolio:  +document.getElementById('initialPortfolio').value,
-        annualExpenses:    +document.getElementById('annualExpenses').value,
-        retirementExpenses:+document.getElementById('retirementExpenses').value,
-        roi:               +document.getElementById('roi').value,
-        swr:               +document.getElementById('swr').value,
-        country:           document.getElementById('countrySelect').value
+        age: document.getElementById('age').value,
+        netIncome: document.getElementById('netIncome').value,
+        initialPortfolio: document.getElementById('initialPortfolio').value,
+        annualExpenses: document.getElementById('annualExpenses').value,
+        retirementExpenses: document.getElementById('retirementExpenses').value,
+        roi: document.getElementById('roi').value,
+        swr: document.getElementById('swr').value,
+        country: document.getElementById('countrySelect').value,
       };
 
-      const res  = await fetch('/calculate',{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify(payload)
+      const resp = await fetch('/calculate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
       });
-      const data = await res.json();
+      const data = await resp.json();
 
+      // update summary
       document.getElementById('summary').innerHTML = `
-        <div style="background:rgba(76,175,80,0.15);padding:15px;border-radius:10px;">
+        <div style="background-color: rgba(76,175,80,0.15); padding:15px; border-radius:8px;">
           🎯 FI in <b>${data.yearsUntilFI}</b> yrs (age <b>${data.fireYear}</b>)<br>
           💼 Target: <b>$${data.fireNumber.toLocaleString()}</b><br>
           🌍 Already FI in <b>${data.fiReadyCount}</b> countries
-        </div>
-      `;
+        </div>`;
 
-      const port = JSON.parse(data.portfolioChart);
-      Plotly.newPlot('portfolioChart', port.data, port.layout, {displayModeBar:false});
-
+      // redraw charts
+      const fig = JSON.parse(data.portfolioChart);
+      Plotly.newPlot('portfolioChart', fig.data, fig.layout, {responsive:true});
       const map = JSON.parse(data.mapChart);
-      Plotly.newPlot('mapChart', map.data, map.layout, {displayModeBar:false});
+      Plotly.newPlot('mapChart', map.data, map.layout, {responsive:true});
 
+      // redraw table
       const tbody = document.querySelector('#countryTable tbody');
       tbody.innerHTML = '';
-      data.countryTable.forEach(r=>{
+      data.countryTable.forEach(r => {
         const tr = document.createElement('tr');
-        tr.innerHTML=`
-          <td>${r.Country}</td>
+        tr.innerHTML = `
+          <td>${r["Country"]}</td>
           <td>${r["Relative COL (%)"]}</td>
           <td>${r["Adjusted Retirement Expenses ($)"]}</td>
           <td>${r["Display FI Timeline"]}</td>`;
         tbody.appendChild(tr);
       });
     }
+
+    // run once on page load
+    window.addEventListener('DOMContentLoaded', runCalculator);
+
+    // re-run whenever any input or select changes
+    document.querySelectorAll('input, select').forEach(el => {
+      el.addEventListener('input', runCalculator);
+      el.addEventListener('change', runCalculator);
+    });
   </script>
 </body>
 </html>

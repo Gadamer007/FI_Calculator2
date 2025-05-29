@@ -1,127 +1,96 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Financial Independence Calculator</title>
+  <meta charset="UTF-8">
+  <title>FI Calculator</title>
   <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
   <style>
-    body { font-family: sans-serif; max-width:800px; margin:auto; padding:20px; }
+    body { font-family:sans-serif; max-width:800px; margin:auto; padding:20px; }
     label { display:block; margin-top:10px; }
-    input, select { width:100%; padding:5px; margin-top:5px; }
-    button { margin-top:15px; padding:10px 20px; }
-    table { width:100%; margin-top:20px; border-collapse:collapse; }
-    th, td { padding:8px; border:1px solid #ccc; text-align:left; }
-    #results { margin-top:30px; }
+    input, select { width:100%; padding:6px; margin-top:4px; }
+    #summary { margin-top:20px; }
   </style>
 </head>
 <body>
   <h1>🔥 Financial Independence Calculator</h1>
 
-  <label>Current Age:
-    <input type="number" id="age" value="30" />
-  </label>
-  <label>Net Annual Income ($):
-    <input type="number" id="netIncome" step="1000" value="88000" />
-  </label>
-  <label>Current Portfolio Value ($):
-    <input type="number" id="initialPortfolio" step="10000" value="200000" />
-  </label>
-  <label>Current Annual Expenses ($):
-    <input type="number" id="annualExpenses" step="1000" value="41000" />
-  </label>
-  <label>Estimated Retirement Expenses ($):
-    <input type="number" id="retirementExpenses" step="1000" value="41000" />
-  </label>
-  <label>Annual ROI (%):
-    <input type="number" id="roi" value="7" step="0.1" />
-  </label>
-  <label>Safe Withdrawal Rate (%):
-    <input type="number" id="swr" value="4" step="0.1" />
-  </label>
-  <label>Select Your Country:
+  <!-- inputs -->
+  <label>Current Age:<input id="age" type="number" value="30"/></label>
+  <label>Net Income ($):<input id="netIncome" type="number" value="88000"/></label>
+  <label>Portfolio ($):<input id="initialPortfolio" type="number" value="200000"/></label>
+  <label>Expenses ($):<input id="annualExpenses" type="number" value="41000"/></label>
+  <label>Retire Expenses ($):<input id="retirementExpenses" type="number" value="41000"/></label>
+  <label>ROI (%):<input id="roi" type="number" step="0.1" value="7"/></label>
+  <label>SWR (%):<input id="swr" type="number" step="0.1" value="4"/></label>
+  <label>Country:
     <select id="countrySelect">
       {% for c in countries %}
-        <option value="{{ c }}">{{ c }}</option>
+        <option>{{c}}</option>
       {% endfor %}
     </select>
   </label>
 
+  <div id="summary"></div>
+  <div id="portfolioChart" style="height:400px;"></div>
+  <div id="mapChart" style="height:400px; margin-top:30px;"></div>
 
-  <div id="results">
-    <h3>Results</h3>
-    <p id="summary"></p>
-    <div id="portfolioChart"></div>
-    <div id="mapChart" style="margin-top:40px;"></div>
-    <h4>FI Timeline by Country</h4>
-    <table id="countryTable">
-      <thead>
-        <tr>
-          <th>Country</th>
-          <th>Relative COL (%)</th>
-          <th>Retirement Expenses ($)</th>
-          <th>FI Timeline (Years)</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
+  <h4>FI Timeline by Country</h4>
+  <table border="1" style="width:100%;border-collapse:collapse">
+    <thead><tr><th>Country</th><th>COL (%)</th><th>Ret Exp ($)</th><th>FI Timeline</th></tr></thead>
+    <tbody id="countryTable"></tbody>
+  </table>
 
   <script>
-    async function runCalculator() {
+    async function updateAll(){
       const payload = {
-        age: document.getElementById('age').value,
-        netIncome: document.getElementById('netIncome').value,
-        initialPortfolio: document.getElementById('initialPortfolio').value,
-        annualExpenses: document.getElementById('annualExpenses').value,
-        retirementExpenses: document.getElementById('retirementExpenses').value,
-        roi: document.getElementById('roi').value,
-        swr: document.getElementById('swr').value,
-        country: document.getElementById('countrySelect').value,
+        age: document.getElementById("age").value,
+        netIncome: document.getElementById("netIncome").value,
+        initialPortfolio: document.getElementById("initialPortfolio").value,
+        annualExpenses: document.getElementById("annualExpenses").value,
+        retirementExpenses: document.getElementById("retirementExpenses").value,
+        roi: document.getElementById("roi").value,
+        swr: document.getElementById("swr").value,
+        country: document.getElementById("countrySelect").value
       };
-
-      const resp = await fetch('/calculate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+      const resp = await fetch("/calculate",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify(payload)
       });
       const data = await resp.json();
 
-      // update summary
-      document.getElementById('summary').innerHTML = `
-        <div style="background-color: rgba(76,175,80,0.15); padding:15px; border-radius:8px;">
-          🎯 FI in <b>${data.yearsUntilFI}</b> yrs (age <b>${data.fireYear}</b>)<br>
-          💼 Target: <b>$${data.fireNumber.toLocaleString()}</b><br>
-          🌍 Already FI in <b>${data.fiReadyCount}</b> countries
-        </div>`;
+      // summary
+      document.getElementById("summary").innerHTML = `
+        🎯 FI in <b>${data.yearsUntilFI}</b> yrs (age ${data.fireYear})<br>
+        💼 Target $${data.fireNumber.toLocaleString()}<br>
+        🌍 FI in ${data.fiReadyCount} countries
+      `;
 
-      // redraw charts
-      const fig = JSON.parse(data.portfolioChart);
-      Plotly.newPlot('portfolioChart', fig.data, fig.layout, {responsive:true});
-      const map = JSON.parse(data.mapChart);
-      Plotly.newPlot('mapChart', map.data, map.layout, {responsive:true});
+      // charts
+      const p = JSON.parse(data.portfolioChart);
+      Plotly.react("portfolioChart", p.data, p.layout);
+      const m = JSON.parse(data.mapChart);
+      Plotly.react("mapChart", m.data, m.layout);
 
-      // redraw table
-      const tbody = document.querySelector('#countryTable tbody');
-      tbody.innerHTML = '';
-      data.countryTable.forEach(r => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>${r["Country"]}</td>
-          <td>${r["Relative COL (%)"]}</td>
-          <td>${r["Adjusted Retirement Expenses ($)"]}</td>
-          <td>${r["Display FI Timeline"]}</td>`;
-        tbody.appendChild(tr);
+      // table
+      const tb = document.getElementById("countryTable");
+      tb.innerHTML = "";
+      data.countryTable.forEach(r=>{
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td>${r.Country}</td>
+                        <td>${r["Relative COL (%)"]}</td>
+                        <td>${r["Retirement Expenses ($)"]}</td>
+                        <td>${r["Display FI Timeline"]}</td>`;
+        tb.appendChild(tr);
       });
     }
 
-    // run once on page load
-    window.addEventListener('DOMContentLoaded', runCalculator);
-
-    // re-run whenever any input or select changes
-    document.querySelectorAll('input, select').forEach(el => {
-      el.addEventListener('input', runCalculator);
-      el.addEventListener('change', runCalculator);
-    });
+    // on load & on-change
+    window.addEventListener("DOMContentLoaded", updateAll);
+    document.querySelectorAll("input,select").forEach(el=>
+      el.addEventListener("change", updateAll)
+    );
   </script>
 </body>
 </html>
+

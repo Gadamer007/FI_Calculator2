@@ -106,11 +106,23 @@ def calculate():
                            font=dict(color="white"), showarrow=False)
 
     fig.update_layout(
-        title=dict(text="Road to Financial Independence", x=0.5),
+        title=dict(text="<b>Road to Financial Independence</b>", x=0.5),
         plot_bgcolor="black", paper_bgcolor="black",
         font=dict(color="white"),
-        xaxis=dict(title="Age",   gridcolor="rgba(200,200,200,0.2)"),
-        yaxis=dict(title="Portfolio ($)", gridcolor="rgba(200,200,200,0.2)")
+        xaxis=dict(
+          title="Age",
+          titlefont=dict(color='white', size=14),
+          tickfont=dict(color='white'),
+          color='white',
+          gridcolor='rgba(255,255,255,0.2)'
+        ),
+        yaxis=dict(
+          title="Portfolio Value ($)",
+          titlefont=dict(color='white', size=14),
+          tickfont=dict(color='white'),
+          color='white',
+          gridcolor='rgba(255,255,255,0.2)'
+        )
     )
 
     # build map + table
@@ -129,7 +141,7 @@ def calculate():
     fig_map = px.choropleth(df, locations="Country", locationmode="country names",
                             color="FI Timeline",
                             color_continuous_scale=[(0,"darkgreen"),(.2,"lightgreen"),(.5,"yellow"),(.8,"orange"),(1,"darkred")],
-                            title="🌍 FI Timeline by Country")
+                            title="🌍 FI timeline When Relocating Abroad")
     fig_map.update_layout(margin=dict(r=0,t=90,l=0,b=40), title_x=0.15)
 
     return jsonify(
@@ -139,10 +151,19 @@ def calculate():
         yearsUntilFI=round(years_until_fi,1) if years_until_fi else None,
         fireNumber= round(fire_number,1),
         fiReadyCount=int((df["FI Timeline"]<=0.1).sum()),
-        countryTable=df[["Country","Relative COL (%)","Adj Ret Exp ($)","FI Timeline"]]
-                     .rename(columns={"Adj Ret Exp ($)":"Retirement Expenses ($)",
-                                      "FI Timeline":"Display FI Timeline"})
-                     .to_dict("records")
+        countryTable = (
+        df[["Country","Relative COL (%)","Adj Ret Exp ($)","FI Timeline"]]
+          # round Relative COL (%) to 1 decimal, Adj Ret Exp to 0 decimals
+          .assign(**{
+            "Relative COL (%)": lambda d: d["Relative COL (%)"].round(1),
+            "Adj Ret Exp ($)":  lambda d: d["Adj Ret Exp ($)"].round(0),
+          })
+          .rename(columns={
+            "Adj Ret Exp ($)": "Adjusted Retirement Expenses ($)",
+            "FI Timeline":       "Display FI Timeline"
+          })
+          .to_dict("records")
+    )
     )
 
 if __name__ == "__main__":

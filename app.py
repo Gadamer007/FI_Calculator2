@@ -74,56 +74,95 @@ def calculate():
     layer1 = layer0 + np.array(contribs)
     layer2 = layer1 + np.array(returns_)
 
+    # ——————————————————————————————————————————————————————
+    # build hover‐text arrays (rounded, correct deltas)
+    hover_initial  = [f"${initial_portfolio:,.0f}"] * len(ages)
+    hover_contribs = [f"${c:,.0f}"           for c in contribs]
+    hover_returns  = [f"${r:,.0f}"           for r in returns_]
+    hover_net      = [f"${v:,.0f}"           for v in port_vals]
+    
     # build plotly figure
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=ages, y=layer0, fill="tozeroy", mode="none",
-                             name="Initial Portfolio",
-                             fillcolor="rgba(120,144,156,0.8)"))
-    fig.add_trace(go.Scatter(x=ages, y=layer1, fill="tonexty", mode="none",
-                             name="Contributions",
-                             fillcolor="rgba(255,193,7,0.6)"))
-    fig.add_trace(go.Scatter(x=ages, y=layer2, fill="tonexty", mode="none",
-                             name="Returns",
-                             fillcolor="rgba(76,175,80,0.6)"))
-    fig.add_trace(go.Scatter(x=ages, y=port_vals, mode="lines",
-                             name="Total Net Worth",
-                             line=dict(color="deepskyblue", width=3)))
-    fig.add_trace(go.Scatter(x=ages, y=[fire_number]*len(ages), mode="lines",
-                             name="FIRE Number",
-                             line=dict(color="red", dash="dash")))
-
-    # FIRE marker
+    
+    # 1) Initial Portfolio
+    fig.add_trace(go.Scatter(
+        x=ages, y=layer0,
+        fill="tozeroy", mode="none",
+        name="Initial Portfolio",
+        fillcolor="rgba(120,144,156,0.8)",
+        hoverinfo="text", text=hover_initial
+    ))
+    
+    # 2) Contributions
+    fig.add_trace(go.Scatter(
+        x=ages, y=layer1,
+        fill="tonexty", mode="none",
+        name="Contributions",
+        fillcolor="rgba(255,193,7,0.6)",
+        hoverinfo="text", text=hover_contribs
+    ))
+    
+    # 3) Returns
+    fig.add_trace(go.Scatter(
+        x=ages, y=layer2,
+        fill="tonexty", mode="none",
+        name="Returns",
+        fillcolor="rgba(76,175,80,0.6)",
+        hoverinfo="text", text=hover_returns
+    ))
+    
+    # 4) Total Net Worth (line on top)
+    fig.add_trace(go.Scatter(
+        x=ages, y=port_vals,
+        mode="lines", name="Total Net Worth",
+        line=dict(color="deepskyblue", width=3),
+        hoverinfo="text", text=hover_net
+    ))
+    
+    # 5) FIRE Number line
+    fig.add_trace(go.Scatter(
+        x=ages, y=[fire_number] * len(ages),
+        mode="lines", name="FIRE Number",
+        line=dict(color="red", dash="dash")
+    ))
+    
+    # FIRE marker & annotation
     if fire_year_exact is not None:
-        fig.add_shape(dict(type="line",
-                           x0=fire_year_exact, x1=fire_year_exact,
-                           y0=0, y1=fire_number,
-                           line=dict(color="lightgrey", dash="dot")))
-        fig.add_trace(go.Scatter(x=[fire_year_exact], y=[fire_number],
-                                 mode="markers", showlegend=False,
-                                 marker=dict(color="red", size=10)))
-        fig.add_annotation(x=fire_year_exact, y=fire_number*1.05,
-                           text=f"{years_until_fi:.1f} yrs (age {fire_year_exact:.1f})",
-                           font=dict(color="white"), showarrow=False)
-
+        fig.add_shape(dict(
+            type="line", x0=fire_year_exact, x1=fire_year_exact,
+            y0=0,           y1=fire_number,
+            line=dict(color="lightgrey", dash="dot")
+        ))
+        fig.add_trace(go.Scatter(
+            x=[fire_year_exact], y=[fire_number],
+            mode="markers", showlegend=False,
+            marker=dict(color="red", size=10)
+        ))
+        fig.add_annotation(
+            x=fire_year_exact, y=fire_number * 1.05,
+            text=f"{years_until_fi:.1f} yrs (age {fire_year_exact:.1f})",
+            font=dict(color="white"), showarrow=False
+        )
+    
+    # axes styling (ensure Y-axis line is shown)
     fig.update_layout(
         title=dict(text="<b>Road to Financial Independence</b>", x=0.5),
         plot_bgcolor="black", paper_bgcolor="black",
         font=dict(color="white"),
         xaxis=dict(
-          title="Age",
-          titlefont=dict(color='white', size=14),
-          tickfont=dict(color='white'),
-          color='white',
-          gridcolor='rgba(255,255,255,0.2)'
+            title="Age", titlefont=dict(color='white', size=14),
+            tickfont=dict(color='white'), color='white',
+            gridcolor='rgba(255,255,255,0.2)'
         ),
         yaxis=dict(
-          title="Portfolio Value ($)",
-          titlefont=dict(color='white', size=14),
-          tickfont=dict(color='white'),
-          color='white',
-          gridcolor='rgba(255,255,255,0.2)'
+            title="Portfolio Value ($)", titlefont=dict(color='white', size=14),
+            tickfont=dict(color='white'), color='white',
+            showline=True, linecolor='white',
+            gridcolor='rgba(255,255,255,0.2)'
         )
     )
+    # ——————————————————————————————————————————————————————
+
 
     # build map + table
     base_idx = df_col.loc[df_col.Country==country, "COL_Index"].iloc[0]

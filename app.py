@@ -64,81 +64,36 @@ def calculate():
             years_until_fi = fire_year_exact - age_input
             break
 
-    # Build individual line plot (no stacking)
+    # Line Plot (no stacking)
     fig = go.Figure()
-
-    fig.add_trace(go.Scatter(
-        x=age,
-        y=[initial_portfolio] * len(age),
-        mode='lines',
-        name="Initial Portfolio",
-        line=dict(color="gray", dash="dash")
-    ))
-
-    fig.add_trace(go.Scatter(
-        x=age,
-        y=cumulative_contributions,
-        mode='lines',
-        name="Cumulative Contributions",
-        line=dict(color="orange")
-    ))
-
-    fig.add_trace(go.Scatter(
-        x=age,
-        y=cumulative_returns,
-        mode='lines',
-        name="Cumulative Returns",
-        line=dict(color="green")
-    ))
-
-    fig.add_trace(go.Scatter(
-        x=age,
-        y=portfolio_values,
-        mode='lines',
-        name="Total Net Worth",
-        line=dict(color="deepskyblue", width=3)
-    ))
-
-    fig.add_trace(go.Scatter(
-        x=age,
-        y=[fire_number] * len(age),
-        mode='lines',
-        name="FIRE Number",
-        line=dict(color='red', dash='dash')
-    ))
+    fig.add_trace(go.Scatter(x=age, y=[initial_portfolio]*len(age), mode='lines', name='Initial Portfolio', line=dict(color='gray', dash='dash')))
+    fig.add_trace(go.Scatter(x=age, y=cumulative_contributions, mode='lines', name='Cumulative Contributions', line=dict(color='gold')))
+    fig.add_trace(go.Scatter(x=age, y=cumulative_returns, mode='lines', name='Cumulative Returns', line=dict(color='green')))
+    fig.add_trace(go.Scatter(x=age, y=portfolio_values, mode='lines', name='Total Net Worth', line=dict(color='deepskyblue', width=3)))
+    fig.add_trace(go.Scatter(x=age, y=[fire_number]*len(age), mode='lines', name='FIRE Number', line=dict(color='red', dash='dash')))
 
     if fire_year_exact is not None:
         fig.add_trace(go.Scatter(
-            x=[fire_year_exact, fire_year_exact],
-            y=[0, fire_number],
-            mode='lines',
-            line=dict(color='lightgrey', dash='dot'),
-            showlegend=False
+            x=[fire_year_exact, fire_year_exact], y=[0, fire_number],
+            mode='lines', line=dict(color='lightgrey', dash='dot'), showlegend=False
         ))
         fig.add_trace(go.Scatter(
-            x=[fire_year_exact],
-            y=[fire_number],
-            mode='markers',
-            marker=dict(color='red', size=10),
-            name="FIRE Marker",
-            showlegend=False
+            x=[fire_year_exact], y=[fire_number],
+            mode='markers', marker=dict(color='red', size=10),
+            name="FIRE Marker", showlegend=False
         ))
         fig.add_annotation(
-            x=fire_year_exact,
-            y=fire_number + (fire_number * 0.1),
+            x=fire_year_exact, y=fire_number * 1.1,
             text=f"{years_until_fi:.1f} years<br>(age {fire_year_exact:.1f})",
-            showarrow=False,
-            font=dict(size=14, color="white")
+            showarrow=False, font=dict(size=14, color="white")
         )
 
     fig.update_layout(
         title="Road to Financial Independence",
-        plot_bgcolor='black',
-        paper_bgcolor='black',
+        plot_bgcolor='black', paper_bgcolor='black',
         font=dict(color='white'),
-        legend=dict(font=dict(color='white')),
         xaxis=dict(title="Age", color="white", gridcolor="rgba(200,200,200,0.2)"),
-        yaxis=dict(title="Portfolio Value ($)", color="white", gridcolor="rgba(200,200,200,0.2)"),
+        yaxis=dict(title="Portfolio Value ($)", color="white", gridcolor="rgba(200,200,200,0.2)")
     )
 
     # ------------------- MAP -------------------
@@ -162,10 +117,8 @@ def calculate():
 
     fig_map = px.choropleth(
         df,
-        locations="Country",
-        locationmode="country names",
-        color="Display FI Timeline",
-        hover_name="Country",
+        locations="Country", locationmode="country names",
+        color="Display FI Timeline", hover_name="Country",
         color_continuous_scale=[
             (0.0, "darkgreen"),
             (0.2, "lightgreen"),
@@ -196,6 +149,7 @@ def calculate():
         'fiReadyCount': int(fi_ready_count),
         'countryTable': country_table
     })
+
 
 
 

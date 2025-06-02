@@ -78,7 +78,7 @@
   </style>
 </head>
 <body>
-  <h1><b>The tool runs with the following data input</b></h1>
+  <h1><b>The tool runs with the following data input:</b></h1>
 
   <!-- inputs -->
   <!-- inputs (two‐column grid on desktop) -->
@@ -186,8 +186,8 @@
               font-size: 0.95rem;
             ">
               💰 Your current Savings Rate is <b>${(100 * (data.netIncome - data.annualExpenses) / data.netIncome).toFixed(1)}%</b><br>
-              🎯 You will reach Financial Independence in <b>${data.yearsUntilFI}</b> yrs (age ${data.fireYear})<br>
-              💼 Your target portfolio value is $${data.fireNumber.toLocaleString()}<br>
+              🎯 You will reach Financial Independence in <b>${data.yearsUntilFI} yrs </b> (age ${data.fireYear})<br>
+              💼 Your target portfolio value is <b>$${data.fireNumber.toLocaleString()}</b><br>
               🌍 You would already be Financially Independent and able to retire in <b>${data.fiReadyCount}</b> countries
             </div>`;
 

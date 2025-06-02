@@ -145,23 +145,42 @@ def calculate():
         )
     
     # axes styling (ensure Y-axis line is shown)
-    fig.update_layout(
-        title=dict(text="<b>Road to Financial Independence</b>", x=0.5),
-        plot_bgcolor="black", paper_bgcolor="black",
-        font=dict(color="white"),
-        hovermode="x unified",     # ← add this line
-        xaxis=dict(
-            title="Age", titlefont=dict(color='white', size=14),
-            tickfont=dict(color='white'), color='white',
-            gridcolor='rgba(255,255,255,0.2)'
-        ),
-        yaxis=dict(
-            title="Portfolio Value ($)", titlefont=dict(color='white', size=14),
-            tickfont=dict(color='white'), color='white',
-            showline=True, linecolor='white',
-            gridcolor='rgba(255,255,255,0.2)'
+        # axes styling (legend moved below, “compare-on-hover” active)
+        fig.update_layout(
+            title=dict(text="<b>Road to Financial Independence</b>", x=0.5),
+            plot_bgcolor="black",
+            paper_bgcolor="black",
+            font=dict(color="white"),
+            hovermode="x unified",
+    
+            # ─── Legend BELOW the chart ───
+            legend=dict(
+                orientation="h",       # horizontal legend
+                yanchor="top",
+                y=-0.2,                # push it below the plot
+                xanchor="center",
+                x=0.5,
+                font=dict(color="white")
+            ),
+    
+            xaxis=dict(
+                title="Age",
+                titlefont=dict(color='white', size=14),
+                tickfont=dict(color='white'),
+                color='white',
+                gridcolor='rgba(255,255,255,0.2)'
+            ),
+            yaxis=dict(
+                title="Portfolio Value ($)",
+                titlefont=dict(color='white', size=14),
+                tickfont=dict(color='white'),
+                color='white',
+                showline=True,
+                linecolor='white',
+                gridcolor='rgba(255,255,255,0.2)'
+            )
         )
-    )
+
     # ——————————————————————————————————————————————————————
 
 
@@ -182,7 +201,22 @@ def calculate():
                             color="FI Timeline",
                             color_continuous_scale=[(0,"darkgreen"),(.2,"lightgreen"),(.5,"yellow"),(.8,"orange"),(1,"darkred")],
                             title="🌍 FI timeline When Relocating Abroad")
-    fig_map.update_layout(margin=dict(r=0,t=90,l=0,b=40), title_x=0.15,hovermode="x unified")
+        fig_map.update_layout(
+        margin=dict(r=0, t=90, l=0, b=40),
+        title_x=0.15,
+        hovermode="x unified",
+
+        # ─── Colorbar BELOW the map ───
+        coloraxis_colorbar=dict(
+            title="Years to FI",
+            orientation="h",        # horizontal colorbar
+            x=0.5,                  # center under the map
+            y=-0.15,                # push it below the map
+            xanchor="center",
+            yanchor="top"
+        )
+    )
+
 
     return jsonify(
         portfolioChart=fig.to_json(),

@@ -213,14 +213,20 @@ def calculate():
             (0.5, "yellow"),
             (0.8, "orange"),
             (1, "darkred"),
-        ],
-        title="🌍 FI Timeline When Relocating Abroad<br><span style='font-size:0.8em'>(Click on countries below)</span>"
+        ]
     )
+    
     fig_map.update_layout(
+        title=dict(
+            text="🌍 FI Timeline When Relocating Abroad<br><span style='font-size:0.8em'>(Click on countries below)</span>",
+            x=0.5,
+            xanchor="center"
+        ),
         margin=dict(r=0, t=90, l=0, b=40),
         hovermode="x unified",
         coloraxis_showscale=False
     )
+
 
 
 

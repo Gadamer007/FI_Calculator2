@@ -133,70 +133,74 @@ def calculate():
             y0=0,           y1=fire_number,
             line=dict(color="lightgrey", dash="dot")
         ))
+            
         fig.add_trace(go.Scatter(
             x=[fire_year_exact], y=[fire_number],
             mode="markers", showlegend=False,
-            marker=dict(color="red", size=10)
+            marker=dict(color="red", size=10),
+            hovertemplate="$%{y:.0f}<extra></extra>"
         ))
         fig.add_annotation(
             x=fire_year_exact, y=fire_number * 1.05,
             text=f"{years_until_fi:.1f} yrs (age {fire_year_exact:.1f})",
             font=dict(color="white"), showarrow=False
         )
-    
+
     # axes styling (ensure Y-axis line is shown)
-        # axes styling (legend moved below, “compare-on-hover” active)
-        fig.update_layout(
-            title=dict(text="<b>Road to Financial Independence</b>", x=0.5),
-            plot_bgcolor="black",
-            paper_bgcolor="black",
-            font=dict(color="white"),
-            hovermode="x unified",
-    
-            # ─── Legend BELOW the chart ───
-            legend=dict(
-                orientation="h",       # horizontal legend
-                yanchor="top",
-                y=-0.2,                # push it below the plot
-                xanchor="center",
-                x=0.5,
-                font=dict(color="white")
-            ),
-    
-            xaxis=dict(
-                title="Age",
-                titlefont=dict(color='white', size=14),
-                tickfont=dict(color='white'),
-                color='white',
-                gridcolor='rgba(255,255,255,0.2)'
-            ),
-            yaxis=dict(
-                title="Portfolio Value ($)",
-                titlefont=dict(color='white', size=14),
-                tickfont=dict(color='white'),
-                color='white',
-                showline=True,
-                linecolor='white',
-                gridcolor='rgba(255,255,255,0.2)'
-            )
+    fig.update_layout(
+        title=dict(text="<b>Road to Financial Independence</b>", x=0.5),
+        plot_bgcolor="black",
+        paper_bgcolor="black",
+        font=dict(color="white"),
+        hovermode="x unified",
+
+        # ─── Legend BELOW the chart ───
+        legend=dict(
+            orientation="h",       # horizontal legend
+            yanchor="top",
+            y=-0.3,                # push it below the plot
+            xanchor="center",
+            x=0.5,
+            font=dict(color="white")
+        ),
+
+        xaxis=dict(
+            title="Age",
+            titlefont=dict(color='white', size=14),
+            tickfont=dict(color='white'),
+            color='white',
+            gridcolor='rgba(255,255,255,0.2)'
+        ),
+        yaxis=dict(
+            title="Portfolio Value ($)",
+            titlefont=dict(color='white', size=14),
+            tickfont=dict(color='white'),
+            color='white',
+            showline=True,
+            linecolor='white',
+            gridcolor='rgba(255,255,255,0.2)'
         )
+    )
 
     # ——————————————————————————————————————————————————————
-
-
     # build map + table
-    base_idx = df_col.loc[df_col.Country==country, "COL_Index"].iloc[0]
+    base_idx = df_col.loc[df_col.Country == country, "COL_Index"].iloc[0]
     df = df_col.copy()
-    df["Relative COL (%)"] = df.COL_Index/base_idx*100
-    df["Adj Ret Exp ($)"]  = df["Relative COL (%)"]/100 * retire_exp
+    df["Relative COL (%)"] = df.COL_Index / base_idx * 100
+    df["Adj Ret Exp ($)"]  = df["Relative COL (%)"] / 100 * retire_exp
+
     def ft(c_exp):
         cp2, yrs2 = initial_portfolio, 0
-        tgt = c_exp/swr*100
-        while cp2 < tgt and yrs2<100:
-            cp2 = cp2*(1+roi/100) + annual_savings
-            yrs2+=1
-        return yrs2 - 1 + (tgt - (cp2 - cp2*(roi/100) - annual_savings)) / ((cp2) - (cp2 - cp2*(roi/100) - annual_savings))
+        tgt = c_exp / swr * 100
+        while cp2 < tgt and yrs2 < 100:
+            cp2 = cp2 * (1 + roi / 100) + annual_savings
+            yrs2 += 1
+        return yrs2 - 1 + (tgt - (cp2 - cp2 * (roi / 100) - annual_savings)) / (
+            (cp2) - (cp2 - cp2 * (roi / 100) - annual_savings)
+        )
+
     df["FI Timeline"] = df["Adj Ret Exp ($)"].apply(ft).clip(lower=0).round(1)
+
     fig_map = px.choropleth(
         df,
         locations="Country",
@@ -213,42 +217,39 @@ def calculate():
     )
     fig_map.update_layout(
         margin=dict(r=0, t=90, l=0, b=40),
-        title_x=0.15,
+        title=dict(text="🌍 FI timeline When Relocating Abroad", x=0.5, xanchor="center"),
         hovermode="x unified",
-
-        # ─── Colorbar BELOW the map ───
         coloraxis_colorbar=dict(
             title="Years to FI",
-            orientation="h",    # horizontal colorbar
-            x=0.5,              # center under the map
-            y=-0.15,            # push it below the map
+            orientation="h",     # horizontal colorbar
+            x=0.5,               # center under the map
+            y=-0.15,             # push it below the map
             xanchor="center",
             yanchor="top"
         )
     )
 
-
     return jsonify(
         portfolioChart=fig.to_json(),
         mapChart=fig_map.to_json(),
-        fireYear=round(fire_year_exact,1) if fire_year_exact else None,
-        yearsUntilFI=round(years_until_fi,1) if years_until_fi else None,
-        fireNumber=round(fire_number,1),
-        fiReadyCount=int((df["FI Timeline"]<=0.1).sum()),
+        fireYear=round(fire_year_exact, 1) if fire_year_exact else None,
+        yearsUntilFI=round(years_until_fi, 1) if years_until_fi else None,
+        fireNumber=round(fire_number, 1),
+        fiReadyCount=int((df["FI Timeline"] <= 0.1).sum()),
         # -- Include these two values so JS can compute savings rate
         netIncome=net_income,
         annualExpenses=annual_expenses,
         countryTable=(
-            df[["Country","Relative COL (%)","Adj Ret Exp ($)","FI Timeline"]]
-              .assign(**{
+            df[["Country", "Relative COL (%)", "Adj Ret Exp ($)", "FI Timeline"]]
+            .assign(**{
                 "Relative COL (%)": lambda d: d["Relative COL (%)"].round(1),
                 "Adj Ret Exp ($)":  lambda d: d["Adj Ret Exp ($)"].round(0),
-              })
-              .rename(columns={
+            })
+            .rename(columns={
                 "Adj Ret Exp ($)": "Adjusted Retirement Expenses ($)",
-                "FI Timeline":       "Display FI Timeline"
-              })
-              .to_dict("records")
+                "FI Timeline": "Display FI Timeline"
+            })
+            .to_dict("records")
         )
     )
 

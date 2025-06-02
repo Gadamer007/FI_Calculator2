@@ -222,6 +222,20 @@
           // 3) Draw charts
           const p = JSON.parse(data.portfolioChart);
           Plotly.react("portfolioChart", p.data, p.layout);
+
+          // ─────────────── Clear hover‐box on background tap ───────────────
+          (function(){
+            const chartDiv = document.getElementById("portfolioChart");
+            chartDiv.on("plotly_afterplot", () => {
+              chartDiv.addEventListener("click", (evt) => {
+                const tag = evt.target.tagName.toLowerCase();
+                if (tag !== "path" && tag !== "circle") {
+                  Plotly.Fx.unhover(chartDiv);
+                }
+              });
+            });
+          })();
+          
           const m = JSON.parse(data.mapChart);
           Plotly.react("mapChart", m.data, m.layout);
     

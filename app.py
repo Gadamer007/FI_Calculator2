@@ -197,11 +197,21 @@ def calculate():
             yrs2+=1
         return yrs2 - 1 + (tgt - (cp2 - cp2*(roi/100) - annual_savings)) / ((cp2) - (cp2 - cp2*(roi/100) - annual_savings))
     df["FI Timeline"] = df["Adj Ret Exp ($)"].apply(ft).clip(lower=0).round(1)
-    fig_map = px.choropleth(df, locations="Country", locationmode="country names",
-                            color="FI Timeline",
-                            color_continuous_scale=[(0,"darkgreen"),(.2,"lightgreen"),(.5,"yellow"),(.8,"orange"),(1,"darkred")],
-                            title="🌍 FI timeline When Relocating Abroad")
-        fig_map.update_layout(
+    fig_map = px.choropleth(
+        df,
+        locations="Country",
+        locationmode="country names",
+        color="FI Timeline",
+        color_continuous_scale=[
+            (0, "darkgreen"),
+            (0.2, "lightgreen"),
+            (0.5, "yellow"),
+            (0.8, "orange"),
+            (1, "darkred"),
+        ],
+        title="🌍 FI timeline When Relocating Abroad"
+    )
+    fig_map.update_layout(
         margin=dict(r=0, t=90, l=0, b=40),
         title_x=0.15,
         hovermode="x unified",
@@ -209,9 +219,9 @@ def calculate():
         # ─── Colorbar BELOW the map ───
         coloraxis_colorbar=dict(
             title="Years to FI",
-            orientation="h",        # horizontal colorbar
-            x=0.5,                  # center under the map
-            y=-0.15,                # push it below the map
+            orientation="h",    # horizontal colorbar
+            x=0.5,              # center under the map
+            y=-0.15,            # push it below the map
             xanchor="center",
             yanchor="top"
         )

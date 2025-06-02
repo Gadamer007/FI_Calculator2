@@ -217,11 +217,12 @@
             tr.innerHTML = `
               <td style="border:1px solid #ccc; padding:8px;">${r.Country}</td>
               <td style="border:1px solid #ccc; padding:8px;">${r["Relative COL (%)"]}</td>
-              <td style="border:1px solid #ccc; padding:8px;">${r["Adjusted Retirement Expenses ($)"]}</td>
+              <td style="border:1px solid #ccc; padding:8px;">${r["Adjusted Retirement Expenses ($)"].toLocaleString()}</td>
               <td style="border:1px solid #ccc; padding:8px;">${r["Display FI Timeline"]}</td>
             `;
             tb.appendChild(tr);
           });
+
         }
     
         // Run on load and whenever inputs change

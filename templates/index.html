@@ -32,80 +32,109 @@
 
   <div id="summary"></div>
   <div id="portfolioChart" style="height:400px;"></div>
-  <div id="mapChart" style="height:400px; margin-top:30px;"></div>
+    <div id="mapChart" style="height:400px; margin-top:30px;"></div>
 
-  <h4>FI Timeline by Country</h4>
-  <table style="width:100%; border-collapse:collapse;">
-    <thead>
-      <tr>
-        <th>Country</th>
-        <th>Relative COL (%)</th>
-        <th>Adjusted Retirement Expenses ($)</th>
-        <th>FI Timeline (Years)</th>
-      </tr>
-    </thead>
-    <tbody id="countryTable"></tbody>
-  </table>
+    <!-- 🌍 Already-retired summary -->
+    <div id="mapSummary" style="
+        background-color: rgba(76, 175, 80, 0.15);
+        padding: 15px;
+        border-radius: 8px;
+        margin: 20px 0;
+      ">
+      🌍 You could already retire in <b>${data.fiReadyCount}</b>
+      out of <b>${data.countryTable.length}</b> countries
+      in our dataset (see map and table)
+    </div>
+  
+    <h4>FI Timeline by Country</h4>
+    <table style="
+        width:100%;
+        border:1px solid #ccc;
+        border-collapse:collapse;
+      ">
+      <thead>
+        <tr>
+          <th style="border:1px solid #ccc; padding:8px;">Country</th>
+          <th style="border:1px solid #ccc; padding:8px;">Relative COL (%)</th>
+          <th style="border:1px solid #ccc; padding:8px;">Adjusted Retirement Expenses ($)</th>
+          <th style="border:1px solid #ccc; padding:8px;">FI Timeline (Years)</th>
+        </tr>
+      </thead>
+      <tbody id="countryTable"></tbody>
+    </table>
+  
+      <script>
+        async function updateAll() {
+          // 1) Fetch the data
+          const payload = {
+            age: document.getElementById("age").value,
+            netIncome: document.getElementById("netIncome").value,
+            initialPortfolio: document.getElementById("initialPortfolio").value,
+            annualExpenses: document.getElementById("annualExpenses").value,
+            retirementExpenses: document.getElementById("retirementExpenses").value,
+            roi: document.getElementById("roi").value,
+            swr: document.getElementById("swr").value,
+            country: document.getElementById("countrySelect").value
+          };
+          const resp = await fetch("/calculate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+          const data = await resp.json();
+    
+          // 2) Summary up top
+          document.getElementById("summary").innerHTML = `
+            <div style="
+              background-color: rgba(76, 175, 80, 0.15);
+              padding: 15px;
+              border-radius: 8px;
+              margin-bottom: 20px;
+            ">
+              🎯 FI in <b>${data.yearsUntilFI}</b> yrs (age ${data.fireYear})<br>
+              💼 Target $${data.fireNumber.toLocaleString()}<br>
+              🌍 FI in ${data.fiReadyCount} countries
+            </div>`;
+    
+          // 3) Draw charts
+          const p = JSON.parse(data.portfolioChart);
+          Plotly.react("portfolioChart", p.data, p.layout);
+          const m = JSON.parse(data.mapChart);
+          Plotly.react("mapChart", m.data, m.layout);
+    
+          // 4) “Already FI” box
+          document.getElementById("mapSummary").innerHTML = `
+            🌍 You could already retire in 
+            <b>${data.fiReadyCount}</b> out of 
+            <b>${data.countryTable.length}</b> countries 
+            in our dataset (see map and table)
+          `;
+    
+          // 5) Sort and rebuild table
+          data.countryTable.sort((a,b) =>
+            b["Display FI Timeline"] - a["Display FI Timeline"]
+          );
+          const tb = document.getElementById("countryTable");
+          tb.innerHTML = "";
+          data.countryTable.forEach(r => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+              <td style="border:1px solid #ccc; padding:8px;">${r.Country}</td>
+              <td style="border:1px solid #ccc; padding:8px;">${r["Relative COL (%)"]}</td>
+              <td style="border:1px solid #ccc; padding:8px;">${r["Adjusted Retirement Expenses ($)"]}</td>
+              <td style="border:1px solid #ccc; padding:8px;">${r["Display FI Timeline"]}</td>
+            `;
+            tb.appendChild(tr);
+          });
+        }
+    
+        // Run on load and whenever inputs change
+        window.addEventListener("DOMContentLoaded", updateAll);
+        document.querySelectorAll("input, select").forEach(el =>
+          el.addEventListener("change", updateAll)
+        );
+      </script>
+    </body>
+    </html>
 
-
-
-  <script>
-    async function updateAll(){
-      const payload = {
-        age: document.getElementById("age").value,
-        netIncome: document.getElementById("netIncome").value,
-        initialPortfolio: document.getElementById("initialPortfolio").value,
-        annualExpenses: document.getElementById("annualExpenses").value,
-        retirementExpenses: document.getElementById("retirementExpenses").value,
-        roi: document.getElementById("roi").value,
-        swr: document.getElementById("swr").value,
-        country: document.getElementById("countrySelect").value
-      };
-      const resp = await fetch("/calculate",{
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify(payload)
-      });
-      const data = await resp.json();
-
-      // summary
-      document.getElementById("summary").innerHTML = `
-        <div style="background-color: rgba(76, 175, 80, 0.15);
-                    padding: 15px;
-                    border-radius: 8px;
-                    margin-bottom: 20px;">
-          🎯 FI in <b>${data.yearsUntilFI}</b> yrs (age ${data.fireYear})<br>
-          💼 Target $${data.fireNumber.toLocaleString()}<br>
-          🌍 FI in ${data.fiReadyCount} countries
-        </div>
-      `;
-
-
-      // charts
-      const p = JSON.parse(data.portfolioChart);
-      Plotly.react("portfolioChart", p.data, p.layout);
-      const m = JSON.parse(data.mapChart);
-      Plotly.react("mapChart", m.data, m.layout);
-
-      // table
-      const tb = document.getElementById("countryTable");
-      tb.innerHTML = "";
-      data.countryTable.forEach(r=>{
-        const tr = document.createElement("tr");
-        tr.innerHTML = `<td>${r.Country}</td>
-                        <td>${r["Relative COL (%)"]}</td>
-                        <td>${r["Adjusted Retirement Expenses ($)"]}</td>
-                        <td>${r["Display FI Timeline"]}</td>`;
-        tb.appendChild(tr);
-      });
-    }
-
-    // on load & on-change
-    window.addEventListener("DOMContentLoaded", updateAll);
-    document.querySelectorAll("input,select").forEach(el=>
-      el.addEventListener("change", updateAll)
-    );
-  </script>
-</body>
-</html>
 

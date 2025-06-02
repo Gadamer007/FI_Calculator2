@@ -4,31 +4,120 @@
   <meta charset="UTF-8">
   <title>FI Calculator</title>
   <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-  <style>
-    body { font-family:sans-serif; max-width:800px; margin:auto; padding:20px; }
-    label { display:block; margin-top:10px; }
-    input, select { width:100%; padding:6px; margin-top:4px; }
-    #summary { margin-top:20px; }
+    <style>
+    body {
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      max-width: 800px;
+      margin: auto;
+      padding: 20px;
+      color: #333;
+      line-height: 1.5;
+    }
+
+    /* Two‐column grid container for inputs (desktop); single column on mobile */
+    .inputs-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+    @media (min-width: 640px) {
+      .inputs-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    label {
+      display: flex;
+      flex-direction: column;
+      font-size: 0.95rem;
+      margin-top: 10px;
+    }
+
+    input,
+    select {
+      width: 100%;
+      padding: 8px;
+      margin-top: 4px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 0.95rem;
+      transition: border-color 0.2s;
+    }
+    input:focus,
+    select:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+    }
+
+    #summary {
+      margin-top: 20px;
+      font-size: 0.95rem;
+    }
+
+    /* Table styling */
+    table {
+      width: 100%;
+      border: 1px solid #ccc;
+      border-collapse: collapse;
+      margin-top: 8px;
+      font-size: 0.9rem;
+    }
+    table th,
+    table td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: left;
+    }
+    table th {
+      background-color: #f5f5f5;
+    }
   </style>
 </head>
 <body>
   <h1><b>The tool runs with the following data input</b></h1>
 
   <!-- inputs -->
-  <label>Current Age:<input id="age" type="number" value="30"/></label>
-  <label>Net Annual Income ($):<input id="netIncome" type="number" value="88000"/></label>
-  <label>Current Portfolio Value ($):<input id="initialPortfolio" type="number" value="200000"/></label>
-  <label>Current Annual Expenses ($):<input id="annualExpenses" type="number" value="41000"/></label>
-  <label>Estimated Annual Expenses in Retirement ($):<input id="retirementExpenses" type="number" value="41000"/></label>
-  <label>Annual Return on Investment (%):<input id="roi" type="number" step="0.1" value="7"/></label>
-  <label>Safe Withdrawal Rate (%):<input id="swr" type="number" step="0.1" value="4"/></label>
-  <label>Current Country:
-    <select id="countrySelect">
-      {% for c in countries %}
-        <option>{{c}}</option>
-      {% endfor %}
-    </select>
-  </label>
+  <!-- inputs (two‐column grid on desktop) -->
+  <div class="inputs-grid">
+    <label>
+      Current Age:
+      <input id="age" type="number" value="30" />
+    </label>
+    <label>
+      Net Annual Income ($):
+      <input id="netIncome" type="number" step="1000" value="88000" />
+    </label>
+    <label>
+      Current Portfolio Value ($):
+      <input id="initialPortfolio" type="number" step="10000" value="200000" />
+    </label>
+    <label>
+      Current Annual Expenses ($):
+      <input id="annualExpenses" type="number" step="10000" value="41000" />
+    </label>
+    <label>
+      Estimated Annual Expenses in Retirement ($):
+      <input id="retirementExpenses" type="number" step="1000" value="41000" />
+    </label>
+    <label>
+      Annual Return on Investment (%):
+      <input id="roi" type="number" step="0.1" value="7" />
+    </label>
+    <label>
+      Safe Withdrawal Rate (%):
+      <input id="swr" type="number" step="0.1" value="4" />
+    </label>
+    <label>
+      Current Country:
+      <select id="countrySelect">
+        {% for c in countries|sort %}
+          <option>{{ c }}</option>
+        {% endfor %}
+      </select>
+    </label>
+  </div>
+
 
   <div id="summary"></div>
   <div id="portfolioChart" style="height:400px;"></div>
@@ -40,11 +129,11 @@
         padding: 15px;
         border-radius: 8px;
         margin: 20px 0;
+        font-size: 0.95rem;
       ">
-      🌍 You could already retire in <b>${data.fiReadyCount}</b>
-      out of <b>${data.countryTable.length}</b> countries
-      in our dataset (see map and table)
+      <!-- Will be populated by JavaScript -->
     </div>
+
   
     <h4>FI Timeline by Country</h4>
     <table style="
@@ -84,17 +173,21 @@
           const data = await resp.json();
     
           // 2) Summary up top
+          // 2) Summary up top (including Savings Rate)
           document.getElementById("summary").innerHTML = `
             <div style="
               background-color: rgba(76, 175, 80, 0.15);
               padding: 15px;
               border-radius: 8px;
               margin-bottom: 20px;
+              font-size: 0.95rem;
             ">
-              🎯 FI in <b>${data.yearsUntilFI}</b> yrs (age ${data.fireYear})<br>
-              💼 Target $${data.fireNumber.toLocaleString()}<br>
-              🌍 FI in ${data.fiReadyCount} countries
+              💰 Your current Savings Rate is <b>${(100 * (data.netIncome - data.annualExpenses) / data.netIncome).toFixed(1)}%</b><br>
+              🎯 You will reach Financial Independence in <b>${data.yearsUntilFI}</b> yrs (age ${data.fireYear})<br>
+              💼 Your target portfolio value is $${data.fireNumber.toLocaleString()}<br>
+              🌍 You would already be Financially Independent and able to retire in <b>${data.fiReadyCount}</b> countries
             </div>`;
+
     
           // 3) Draw charts
           const p = JSON.parse(data.portfolioChart);

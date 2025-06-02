@@ -119,7 +119,7 @@ def calculate():
         hoverinfo="text", text=hover_net
     ))
     
-    # 5) FIRE Number line (remove age from hover, show only FIRE value)
+    # 5) FIRE Number line (hover only shows FIRE value, not age)
     fig.add_trace(go.Scatter(
         x=ages, y=[fire_number] * len(ages),
         mode="lines", name="FIRE Number",
@@ -127,7 +127,7 @@ def calculate():
         hovertemplate="$%{y:.0f}<extra></extra>"
     ))
     
-    # FIRE marker & annotation (also remove age from marker hover)
+    # FIRE marker & annotation (hover only shows FIRE value)
     if fire_year_exact is not None:
         fig.add_shape(dict(
             type="line", x0=fire_year_exact, x1=fire_year_exact,
@@ -146,19 +146,20 @@ def calculate():
             font=dict(color="white"), showarrow=False
         )
 
-    # axes styling (ensure Y-axis line is shown, set legend below, “compare-on-hover” active)
+    # axes styling (ensure Y-axis line is shown, legend below, “compare-on-hover” active)
     fig.update_layout(
         title=dict(text="<b>Road to Financial Independence</b>", x=0.5),
         plot_bgcolor="black",
         paper_bgcolor="black",
         font=dict(color="white"),
         hovermode="x unified",
+        margin=dict(b=40),  # give some bottom margin for the horizontal legend
 
         # ─── Legend BELOW the chart ───
         legend=dict(
             orientation="h",       # horizontal legend
             yanchor="top",
-            y=-0.3,                # push it below the plot
+            y=-0.2,                # push it below the plot
             xanchor="center",
             x=0.5,
             font=dict(color="white")
@@ -216,17 +217,20 @@ def calculate():
         title="🌍 FI timeline When Relocating Abroad"
     )
     fig_map.update_layout(
-        margin=dict(r=0, t=90, l=0, b=40),
+        margin=dict(r=0, t=90, l=0, b=60),
         title=dict(text="🌍 FI timeline When Relocating Abroad", x=0.5, xanchor="center"),
         hovermode="x unified",
+
+        # ─── Colorbar BELOW the map ───
         coloraxis_colorbar=dict(
             title="Years to FI",
-            orientation="h",     # horizontal colorbar below the map
-            x=0.5,               # center under the map
-            y=-0.15,             # push it below the map
+            orientation="h",       # horizontal colorbar
+            x=0.5,                 # center under the map
+            y=-0.25,               # push it below the map
             xanchor="center",
             yanchor="top",
-            thicknessmode="pixels", thickness=15
+            thicknessmode="pixels",
+            thickness=15
         )
     )
 
@@ -257,6 +261,4 @@ def calculate():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(__import__("os").environ.get("PORT", 5000)), debug=False)
-
-
 

@@ -222,12 +222,16 @@ def calculate():
         hovermode="x unified"
     )
 
+    # ── ADD THIS LINE to turn off the built-in colorbar ──
+    fig_map.data[0].showscale = False
+
+
     # Force the single PX trace’s colorbar to be horizontal:
-    fig_map.data[0].colorbar.orientation = "h"
-    fig_map.data[0].colorbar.x = 0.5
-    fig_map.data[0].colorbar.y = 1.05
-    fig_map.data[0].colorbar.xanchor = "center"
-    fig_map.data[0].colorbar.yanchor = "bottom"
+    #fig_map.data[0].colorbar.orientation = "h"
+    #fig_map.data[0].colorbar.x = 0.5
+    #fig_map.data[0].colorbar.y = 1.05
+    #fig_map.data[0].colorbar.xanchor = "center"
+    #fig_map.data[0].colorbar.yanchor = "bottom"
 
     return jsonify(
         portfolioChart=fig.to_json(),

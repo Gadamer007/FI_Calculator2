@@ -149,6 +149,7 @@ def calculate():
         title=dict(text="<b>Road to Financial Independence</b>", x=0.5),
         plot_bgcolor="black", paper_bgcolor="black",
         font=dict(color="white"),
+        hovermode="x unified",     # ← add this line
         xaxis=dict(
             title="Age", titlefont=dict(color='white', size=14),
             tickfont=dict(color='white'), color='white',
@@ -181,7 +182,7 @@ def calculate():
                             color="FI Timeline",
                             color_continuous_scale=[(0,"darkgreen"),(.2,"lightgreen"),(.5,"yellow"),(.8,"orange"),(1,"darkred")],
                             title="🌍 FI timeline When Relocating Abroad")
-    fig_map.update_layout(margin=dict(r=0,t=90,l=0,b=40), title_x=0.15)
+    fig_map.update_layout(margin=dict(r=0,t=90,l=0,b=40), title_x=0.15,hovermode="x unified")
 
     return jsonify(
         portfolioChart=fig.to_json(),

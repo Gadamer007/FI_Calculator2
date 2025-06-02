@@ -217,22 +217,17 @@ def calculate():
         title="🌍 FI timeline When Relocating Abroad"
     )
     fig_map.update_layout(
-        margin=dict(r=0, t=90, l=0, b=60),
+        margin=dict(r=0, t=90, l=0, b=40),
         title=dict(text="🌍 FI timeline When Relocating Abroad", x=0.5, xanchor="center"),
-        hovermode="x unified",
-
-        # ─── Colorbar BELOW the map ───
-        coloraxis_colorbar=dict(
-            title="Years to FI",
-            orientation="h",       # horizontal colorbar
-            x=0.5,                 # center under the map
-            y=-0.25,               # push it below the map
-            xanchor="center",
-            yanchor="top",
-            thicknessmode="pixels",
-            thickness=15
-        )
+        hovermode="x unified"
     )
+
+    # Force the single PX trace’s colorbar to be horizontal:
+    fig_map.data[0].colorbar.orientation = "h"
+    fig_map.data[0].colorbar.x = 0.5
+    fig_map.data[0].colorbar.y = -0.2
+    fig_map.data[0].colorbar.xanchor = "center"
+    fig_map.data[0].colorbar.yanchor = "top"
 
     return jsonify(
         portfolioChart=fig.to_json(),
@@ -257,7 +252,6 @@ def calculate():
             .to_dict("records")
         )
     )
-
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(__import__("os").environ.get("PORT", 5000)), debug=False)

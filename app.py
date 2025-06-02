@@ -159,7 +159,7 @@ def calculate():
         legend=dict(
             orientation="h",       # horizontal legend
             yanchor="top",
-            y=-0.2,                # push it below the plot
+            y=-0.3,                # push it below the plot
             xanchor="center",
             x=0.5,
             font=dict(color="white")

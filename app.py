@@ -185,25 +185,28 @@ def calculate():
 
     return jsonify(
         portfolioChart=fig.to_json(),
-        mapChart=     fig_map.to_json(),
-        fireYear=    round(fire_year_exact,1) if fire_year_exact else None,
+        mapChart=fig_map.to_json(),
+        fireYear=round(fire_year_exact,1) if fire_year_exact else None,
         yearsUntilFI=round(years_until_fi,1) if years_until_fi else None,
-        fireNumber= round(fire_number,1),
+        fireNumber=round(fire_number,1),
         fiReadyCount=int((df["FI Timeline"]<=0.1).sum()),
-        countryTable = (
-        df[["Country","Relative COL (%)","Adj Ret Exp ($)","FI Timeline"]]
-          # round Relative COL (%) to 1 decimal, Adj Ret Exp to 0 decimals
-          .assign(**{
-            "Relative COL (%)": lambda d: d["Relative COL (%)"].round(1),
-            "Adj Ret Exp ($)":  lambda d: d["Adj Ret Exp ($)"].round(0),
-          })
-          .rename(columns={
-            "Adj Ret Exp ($)": "Adjusted Retirement Expenses ($)",
-            "FI Timeline":       "Display FI Timeline"
-          })
-          .to_dict("records")
+        # -- Include these two values so JS can compute savings rate
+        netIncome=net_income,
+        annualExpenses=annual_expenses,
+        countryTable=(
+            df[["Country","Relative COL (%)","Adj Ret Exp ($)","FI Timeline"]]
+              .assign(**{
+                "Relative COL (%)": lambda d: d["Relative COL (%)"].round(1),
+                "Adj Ret Exp ($)":  lambda d: d["Adj Ret Exp ($)"].round(0),
+              })
+              .rename(columns={
+                "Adj Ret Exp ($)": "Adjusted Retirement Expenses ($)",
+                "FI Timeline":       "Display FI Timeline"
+              })
+              .to_dict("records")
+        )
     )
-    )
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(__import__("os").environ.get("PORT", 5000)), debug=False)

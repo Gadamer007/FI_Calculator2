@@ -119,21 +119,21 @@ def calculate():
         hoverinfo="text", text=hover_net
     ))
     
-    # 5) FIRE Number line
+    # 5) FIRE Number line (remove age from hover, show only FIRE value)
     fig.add_trace(go.Scatter(
         x=ages, y=[fire_number] * len(ages),
         mode="lines", name="FIRE Number",
-        line=dict(color="red", dash="dash")
+        line=dict(color="red", dash="dash"),
+        hovertemplate="$%{y:.0f}<extra></extra>"
     ))
     
-    # FIRE marker & annotation
+    # FIRE marker & annotation (also remove age from marker hover)
     if fire_year_exact is not None:
         fig.add_shape(dict(
             type="line", x0=fire_year_exact, x1=fire_year_exact,
             y0=0,           y1=fire_number,
             line=dict(color="lightgrey", dash="dot")
         ))
-            
         fig.add_trace(go.Scatter(
             x=[fire_year_exact], y=[fire_number],
             mode="markers", showlegend=False,
@@ -146,7 +146,7 @@ def calculate():
             font=dict(color="white"), showarrow=False
         )
 
-    # axes styling (ensure Y-axis line is shown)
+    # axes styling (ensure Y-axis line is shown, set legend below, “compare-on-hover” active)
     fig.update_layout(
         title=dict(text="<b>Road to Financial Independence</b>", x=0.5),
         plot_bgcolor="black",
@@ -221,11 +221,12 @@ def calculate():
         hovermode="x unified",
         coloraxis_colorbar=dict(
             title="Years to FI",
-            orientation="h",     # horizontal colorbar
+            orientation="h",     # horizontal colorbar below the map
             x=0.5,               # center under the map
             y=-0.15,             # push it below the map
             xanchor="center",
-            yanchor="top"
+            yanchor="top",
+            thicknessmode="pixels", thickness=15
         )
     )
 
@@ -256,9 +257,6 @@ def calculate():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(__import__("os").environ.get("PORT", 5000)), debug=False)
-
-
-
 
 
 

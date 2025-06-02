@@ -220,10 +220,10 @@ def calculate():
         margin=dict(r=0, t=90, l=0, b=40),
         title=dict(text="🌍 FI timeline When Relocating Abroad", x=0.5, xanchor="center"),
         hovermode="x unified"
+        coloraxis_showscale=False   # ← hide Plotly Express’s default vertical colorbar
     )
 
-    # ── ADD THIS LINE to turn off the built-in colorbar ──
-    fig_map.data[0].showscale = False
+
 
 
     # Force the single PX trace’s colorbar to be horizontal:

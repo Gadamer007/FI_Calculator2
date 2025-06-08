@@ -34,7 +34,7 @@ def calculate():
     country           = data["country"]
 
     # FIRE target and savings
-    fire_number    = (annual_expenses / swr) * 100
+    fire_number    = (retire_exp / swr) * 100
     annual_savings = net_income - annual_expenses
 
     # build timeline until FIRE + 3 years
